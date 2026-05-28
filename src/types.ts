@@ -34,3 +34,12 @@ export interface Space {
   history: Track[];
   preferences: UserPreferences | null;
 }
+
+export interface ConnectedDevice {
+  id: string;
+  name: string;
+  type: 'computer' | 'airplay' | 'bluetooth' | 'connect';
+  label: string;
+  isActive: boolean;
+  deviceId?: string;
+}

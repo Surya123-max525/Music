@@ -14,9 +14,12 @@ import {
   Pause,
   SkipForward,
   SkipBack,
-  MonitorPlay
+  Bluetooth,
+  Laptop,
+  Smartphone,
+  Speaker
 } from 'lucide-react';
-import type { Track, Playlist, Space, UserPreferences, UserAccount } from './types';
+import type { Track, Playlist, Space, UserPreferences, UserAccount, ConnectedDevice } from './types';
 import { Onboarding } from './components/Onboarding';
 import { SpaceSelector } from './components/SpaceSelector';
 import { Player } from './components/Player';
@@ -118,6 +121,15 @@ export const App: React.FC = () => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showMiniplayer, setShowMiniplayer] = useState(false);
   const [showDeviceSelector, setShowDeviceSelector] = useState(false);
+
+  // Device Selection & Bluetooth states
+  const [devices, setDevices] = useState<ConnectedDevice[]>([
+    { id: 'web-player', name: 'Web Player', type: 'computer', label: 'This computer', isActive: true },
+    { id: 'living-room', name: 'Living Room Speakers', type: 'airplay', label: 'AirPlay', isActive: false },
+    { id: 'suryas-phone', name: "Surya's Phone", type: 'connect', label: 'masti Connect', isActive: false }
+  ]);
+  const [isScanningBluetooth, setIsScanningBluetooth] = useState(false);
+  const [discoveredBluetoothDevices, setDiscoveredBluetoothDevices] = useState<ConnectedDevice[]>([]);
 
   // Library / UI state
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('favorites');
@@ -325,6 +337,129 @@ export const App: React.FC = () => {
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  const handleSelectDevice = (deviceId: string) => {
+    setDevices(prev => 
+      prev.map(d => ({
+        ...d,
+        isActive: d.id === deviceId
+      }))
+    );
+    const device = devices.find(d => d.id === deviceId);
+    if (device) {
+      if (device.type === 'bluetooth') {
+        alert(`Playing audio through Bluetooth: ${device.name}`);
+      } else {
+        alert(`Switched playback to: ${device.name}`);
+      }
+    }
+    setShowDeviceSelector(false);
+  };
+
+  const handlePairBluetooth = async () => {
+    setIsScanningBluetooth(true);
+    setDiscoveredBluetoothDevices([]);
+
+    let bluetoothSuccess = false;
+
+    // 1. Try Web Bluetooth API if available
+    const nav = navigator as any;
+    if (nav.bluetooth && nav.bluetooth.requestDevice) {
+      try {
+        const device = await nav.bluetooth.requestDevice({
+          acceptAllDevices: true
+        });
+        if (device && device.name) {
+          const newDevice: ConnectedDevice = {
+            id: `bt-${device.id || Math.random().toString(36).substr(2, 9)}`,
+            name: device.name,
+            type: 'bluetooth',
+            label: 'Bluetooth Device',
+            isActive: true
+          };
+          setDevices(prev => {
+            const updated = prev.map(d => ({ ...d, isActive: false }));
+            const exists = updated.find(d => d.name === device.name);
+            if (exists) {
+              exists.isActive = true;
+              return updated;
+            }
+            return [...updated, newDevice];
+          });
+          bluetoothSuccess = true;
+          setIsScanningBluetooth(false);
+          alert(`Connected to ${device.name} over Bluetooth!`);
+          return;
+        }
+      } catch (err) {
+        console.log('Web Bluetooth canceled or rejected:', err);
+      }
+    }
+
+    // 2. Try MediaDevices Audio Output if supported
+    if (!bluetoothSuccess && navigator.mediaDevices && (navigator.mediaDevices as any).selectAudioOutput) {
+      try {
+        const device = await (navigator.mediaDevices as any).selectAudioOutput();
+        if (device && device.label) {
+          const newDevice: ConnectedDevice = {
+            id: `audio-${device.deviceId}`,
+            name: device.label,
+            type: 'bluetooth',
+            label: device.label.toLowerCase().includes('bluetooth') ? 'Bluetooth Audio' : 'Audio Output',
+            isActive: true,
+            deviceId: device.deviceId
+          };
+          setDevices(prev => {
+            const updated = prev.map(d => ({ ...d, isActive: false }));
+            const exists = updated.find(d => d.deviceId === device.deviceId);
+            if (exists) {
+              exists.isActive = true;
+              return updated;
+            }
+            return [...updated, newDevice];
+          });
+          bluetoothSuccess = true;
+          setIsScanningBluetooth(false);
+          alert(`Connected to ${device.label}!`);
+          return;
+        }
+      } catch (err) {
+        console.log('selectAudioOutput failed or rejected:', err);
+      }
+    }
+
+    // 3. Fallback: Mock scanning for Bluetooth devices
+    if (!bluetoothSuccess) {
+      setTimeout(() => {
+        const mockDevices: ConnectedDevice[] = [
+          { id: 'bt-airpods', name: "Surya's AirPods Pro", type: 'bluetooth', label: 'Bluetooth Headset', isActive: false },
+          { id: 'bt-sony', name: 'Sony WH-1000XM4', type: 'bluetooth', label: 'Bluetooth Headphones', isActive: false },
+          { id: 'bt-bose', name: 'Bose SoundLink Revolve', type: 'bluetooth', label: 'Bluetooth Speaker', isActive: false }
+        ];
+        setDiscoveredBluetoothDevices(mockDevices);
+        setIsScanningBluetooth(false);
+      }, 1500);
+    }
+  };
+
+  const handleConnectDiscovered = (device: ConnectedDevice) => {
+    setIsScanningBluetooth(true); // show connecting spinner
+    setTimeout(() => {
+      setDevices(prev => {
+        const updated = prev.map(d => ({ ...d, isActive: false }));
+        const exists = updated.find(d => d.id === device.id);
+        if (exists) {
+          exists.isActive = true;
+          return updated;
+        }
+        return [...updated, { ...device, isActive: true }];
+      });
+      setIsScanningBluetooth(false);
+      setDiscoveredBluetoothDevices([]);
+      setShowDeviceSelector(false);
+      alert(`Connected to ${device.name} over Bluetooth!`);
+    }, 800);
   };
 
   const handleNext = () => {
@@ -1012,57 +1147,60 @@ export const App: React.FC = () => {
 
       {/* Right Sidebar - Now Playing Preview (always mounted to prevent YT Player API crashes) */}
       <aside className={`app-sidebar-right glass-panel ${currentTrack ? 'visible' : 'hidden'}`}>
-        {currentTrack && (
-          <>
-            <div className="sidebar-video-container">
-              {/* Always mounted YT player iframe wrapper to preserve video playing state */}
-              <div className={showVideoFeed ? 'visible-iframe-wrapper' : 'hidden-iframe-wrapper'}>
-                <YoutubePlayerContainer />
+        {/* The video container must always be rendered in the DOM so YT Player can initialize */}
+        <div className="sidebar-video-container" style={{ display: currentTrack ? 'block' : 'none' }}>
+          {/* Always mounted YT player iframe wrapper to preserve video playing state */}
+          <div className={showVideoFeed ? 'visible-iframe-wrapper' : 'hidden-iframe-wrapper'}>
+            <YoutubePlayerContainer />
+          </div>
+          
+          {/* Toggle Back button when showing video feed */}
+          {currentTrack && showVideoFeed && (
+            <button 
+              className="show-cover-btn animate-fade-in" 
+              onClick={() => setShowVideoFeed(false)}
+              title="Show Cover Art"
+            >
+              Show Cover Art
+            </button>
+          )}
+          
+          {/* Cover photo / Vinyl Player Deck displayed when video feed is not active */}
+          {currentTrack && !showVideoFeed && (
+            <div className={`vinyl-player-deck ${isPlaying ? 'is-playing' : ''}`}>
+              {/* Sleeve */}
+              <div className="vinyl-sleeve">
+                <img src={currentTrack.thumbnail} alt="" className="video-cover-img sleeve-img" />
               </div>
               
-              {/* Toggle Back button when showing video feed */}
-              {showVideoFeed && (
-                <button 
-                  className="show-cover-btn animate-fade-in" 
-                  onClick={() => setShowVideoFeed(false)}
-                  title="Show Cover Art"
-                >
-                  Show Cover Art
-                </button>
-              )}
-              
-              {/* Cover photo / Vinyl Player Deck displayed when video feed is not active */}
-              {!showVideoFeed && (
-                <div className={`vinyl-player-deck ${isPlaying ? 'is-playing' : ''}`}>
-                  {/* Sleeve */}
-                  <div className="vinyl-sleeve" onClick={() => setShowVideoFeed(true)} title="Click to watch Video Feed">
-                    <img src={currentTrack.thumbnail} alt="" className="video-cover-img sleeve-img" />
-                    <div className="play-video-hover-btn">
-                      <Play size={22} fill="currentColor" style={{ marginLeft: 2 }} />
-                      <span>Watch Video</span>
-                    </div>
-                  </div>
-                  
-                  {/* Vinyl Record */}
-                  <div className="vinyl-record">
-                    <div className="vinyl-record-disc-wrapper">
-                      <div className="vinyl-grooves"></div>
-                      <div className="vinyl-label" style={{ backgroundImage: `url(${currentTrack.thumbnail})` }}>
-                        <div className="vinyl-center-spindle"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tonearm */}
-                  <div className="tonearm-housing">
-                    <div className="tonearm-base"></div>
-                    <div className="tonearm-arm">
-                      <div className="tonearm-headshell"></div>
-                    </div>
+              {/* Vinyl Record */}
+              <div 
+                className="vinyl-record" 
+                onClick={() => setShowVideoFeed(true)}
+                title="Click vinyl to watch Video Feed"
+                style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+              >
+                <div className="vinyl-record-disc-wrapper">
+                  <div className="vinyl-grooves"></div>
+                  <div className="vinyl-label" style={{ backgroundImage: `url(${currentTrack.thumbnail})` }}>
+                    <div className="vinyl-center-spindle"></div>
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Tonearm */}
+              <div className="tonearm-housing">
+                <div className="tonearm-base"></div>
+                <div className="tonearm-arm">
+                  <div className="tonearm-headshell"></div>
+                </div>
+              </div>
             </div>
+          )}
+        </div>
+
+        {currentTrack && (
+          <>
 
             <div className="sidebar-track-details">
               <img 
@@ -1199,27 +1337,70 @@ export const App: React.FC = () => {
             <h4>Connect to a device</h4>
           </div>
           <div className="device-list">
-            <div className="device-item active">
-              <MonitorPlay size={16} className="active-icon" />
-              <div className="device-info">
-                <h5>Web Player (Active)</h5>
-                <p>This computer</p>
+            {devices.map(device => {
+              const getIcon = () => {
+                switch(device.type) {
+                  case 'computer': return <Laptop size={16} className={device.isActive ? 'active-icon' : ''} />;
+                  case 'airplay': return <Speaker size={16} className={device.isActive ? 'active-icon' : ''} />;
+                  case 'bluetooth': return <Bluetooth size={16} className={device.isActive ? 'active-icon' : ''} />;
+                  case 'connect': return <Smartphone size={16} className={device.isActive ? 'active-icon' : ''} />;
+                  default: return <Music size={16} className={device.isActive ? 'active-icon' : ''} />;
+                }
+              };
+              return (
+                <div 
+                  key={device.id} 
+                  className={`device-item ${device.isActive ? 'active' : ''}`}
+                  onClick={() => handleSelectDevice(device.id)}
+                >
+                  {getIcon()}
+                  <div className="device-info">
+                    <h5>{device.name}</h5>
+                    <p>{device.label}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="bluetooth-pairing-section">
+            {isScanningBluetooth ? (
+              <div className="bluetooth-scanner">
+                <Bluetooth className="bluetooth-pulse-icon" size={24} />
+                <p className="scanner-status">
+                  {discoveredBluetoothDevices.length > 0 ? 'Connecting device...' : 'Scanning for Bluetooth devices...'}
+                </p>
+                <div className="scanner-spinner"></div>
               </div>
-            </div>
-            <div className="device-item" onClick={() => { alert("Connected to Living Room Speakers"); setShowDeviceSelector(false); }}>
-              <Music size={16} />
-              <div className="device-info">
-                <h5>Living Room Speakers</h5>
-                <p>AirPlay</p>
+            ) : discoveredBluetoothDevices.length > 0 ? (
+              <div className="discovered-list">
+                <div className="discovered-header">Discovered Bluetooth:</div>
+                {discoveredBluetoothDevices.map(device => (
+                  <div 
+                    key={device.id} 
+                    className="device-item discovered animate-fade-in"
+                    onClick={() => handleConnectDiscovered(device)}
+                  >
+                    <Bluetooth size={16} />
+                    <div className="device-info">
+                      <h5>{device.name}</h5>
+                      <p>{device.label}</p>
+                    </div>
+                  </div>
+                ))}
+                <button 
+                  className="bluetooth-pair-btn" 
+                  style={{ background: 'rgba(255,255,255,0.05)', marginTop: 8 }}
+                  onClick={() => setDiscoveredBluetoothDevices([])}
+                >
+                  Cancel Scan
+                </button>
               </div>
-            </div>
-            <div className="device-item" onClick={() => { alert("Connected to Surya's Phone"); setShowDeviceSelector(false); }}>
-              <UserIcon size={16} />
-              <div className="device-info">
-                <h5>Surya's Phone</h5>
-                <p>masti Connect</p>
-              </div>
-            </div>
+            ) : (
+              <button className="bluetooth-pair-btn" onClick={handlePairBluetooth}>
+                <Bluetooth size={14} /> Pair Bluetooth Device
+              </button>
+            )}
           </div>
         </div>
       )}
