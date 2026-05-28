@@ -63,6 +63,7 @@ export const App: React.FC = () => {
   const [shuffleMode, setShuffleMode] = useState(false);
   const [activeQueue, setActiveQueue] = useState<Track[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
+  const [showVideoFeed, setShowVideoFeed] = useState(false);
 
   // Library / UI state
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('favorites');
@@ -101,6 +102,10 @@ export const App: React.FC = () => {
       setDeferredPrompt(e);
     });
   }, []);
+
+  useEffect(() => {
+    setShowVideoFeed(false);
+  }, [currentTrack?.id]);
 
   // Sync spaces list to localStorage
   const saveSpacesToStorage = (updatedSpaces: Space[]) => {
@@ -927,21 +932,39 @@ export const App: React.FC = () => {
 
       {/* Right Sidebar - Now Playing Preview (always mounted to prevent YT Player API crashes) */}
       <aside className={`app-sidebar-right glass-panel ${currentTrack ? 'visible' : 'hidden'}`}>
-        <div className="sidebar-video-container">
-          <div id="youtube-player-iframe"></div>
-        </div>
         {currentTrack && (
-          <div className="sidebar-track-details">
-            <img 
-              src={currentTrack.thumbnail} 
-              alt={currentTrack.title} 
-              className={`sidebar-track-thumb ${isPlaying ? 'rotating-disc' : ''}`}
-            />
-            <div className="sidebar-track-info">
-              <h4 className="sidebar-track-title" title={currentTrack.title}>{currentTrack.title}</h4>
-              <p className="sidebar-track-channel" title={currentTrack.channelTitle}>{currentTrack.channelTitle}</p>
+          <>
+            <div className="sidebar-video-container">
+              {/* Always mounted YT player iframe, hidden when showing cover photo */}
+              <div 
+                id="youtube-player-iframe" 
+                className={showVideoFeed ? 'visible-iframe' : 'hidden-iframe'}
+              ></div>
+              
+              {/* Cover photo displayed when video feed is not active */}
+              {!showVideoFeed && (
+                <div className="video-cover-overlay" onClick={() => setShowVideoFeed(true)}>
+                  <img src={currentTrack.thumbnail} alt="" className="video-cover-img" />
+                  <div className="play-video-hover-btn">
+                    <Play size={22} fill="currentColor" style={{ marginLeft: 2 }} />
+                    <span>Watch Video</span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+
+            <div className="sidebar-track-details">
+              <img 
+                src={currentTrack.thumbnail} 
+                alt={currentTrack.title} 
+                className={`sidebar-track-thumb ${isPlaying ? 'rotating-disc' : ''}`}
+              />
+              <div className="sidebar-track-info">
+                <h4 className="sidebar-track-title" title={currentTrack.title}>{currentTrack.title}</h4>
+                <p className="sidebar-track-channel" title={currentTrack.channelTitle}>{currentTrack.channelTitle}</p>
+              </div>
+            </div>
+          </>
         )}
       </aside>
 

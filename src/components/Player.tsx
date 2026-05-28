@@ -238,23 +238,8 @@ export const Player: React.FC<PlayerProps> = ({
   return (
     <div className={`player-container glass-panel theme-${theme}`}>
       <div className="player-inner">
-        {/* Track Details (Visible only on mobile screen) */}
-        {currentTrack && (
-          <div className="player-track-info mobile-only-track-info">
-            <div className="player-track-thumb-wrapper">
-              <img 
-                src={currentTrack.thumbnail || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=80&auto=format&fit=crop&q=60'} 
-                alt={currentTrack.title}
-                className={`track-thumb-img ${isPlaying ? 'rotating-disc' : ''}`}
-              />
-              <div className="center-hole"></div>
-            </div>
-            <div className="track-text-details">
-              <h4 className="player-track-title">{currentTrack.title}</h4>
-              <p className="player-track-channel">{currentTrack.channelTitle}</p>
-            </div>
-          </div>
-        )}
+        {/* Spacer to keep center controls centered */}
+        <div className="player-track-info-spacer"></div>
 
         {/* Center Controls: Timeline and Buttons */}
         <div className="player-center-controls">
