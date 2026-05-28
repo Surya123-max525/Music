@@ -10,7 +10,11 @@ import {
   Plus, 
   Sparkles, 
   Trash2, 
-  Play
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  MonitorPlay
 } from 'lucide-react';
 import type { Track, Playlist, Space, UserPreferences, UserAccount } from './types';
 import { Onboarding } from './components/Onboarding';
@@ -49,6 +53,41 @@ class YoutubePlayerContainer extends React.Component {
   }
 }
 
+const getLyricsForTrack = (track: { title: string; channelTitle: string }) => {
+  const titleLower = track.title.toLowerCase();
+  if (titleLower.includes("murder in my mind")) {
+    return [
+      "I have a dream...",
+      "I have a dream to see...",
+      "Murder in my mind",
+      "No rest, no peace, just murder in my mind",
+      "I see the shadows creeping on the wall",
+      "I hear the whispers telling me to fall",
+      "Murder in my mind",
+      "It's murder in my mind...",
+      "I cannot run, I cannot hide from this",
+      "A dark desire, a cold and deadly kiss",
+      "Murder in my mind",
+      "Oh, murder in my mind...",
+      "Heavy synthesizer drop...",
+      "Murder in my mind..."
+    ];
+  }
+  return [
+    "Floating through the silent space,",
+    "Searching for a familiar place.",
+    "The melodies begin to flow,",
+    "Underneath the neon glow.",
+    "Every beat is a step we take,",
+    "Every promise we choose to make.",
+    "Listen closely to the sound,",
+    "As the world goes round and round.",
+    "Instrumental breakdown...",
+    "We find our space, we find our light,",
+    "Streaming through the endless night."
+  ];
+};
+
 export const App: React.FC = () => {
   // Navigation Tabs: 'home' | 'search' | 'library' | 'profile' | 'downloads'
   const [currentTab, setCurrentTab] = useState<'home' | 'search' | 'library' | 'profile' | 'downloads'>('home');
@@ -76,6 +115,9 @@ export const App: React.FC = () => {
   const [queueIndex, setQueueIndex] = useState(-1);
   const [showVideoFeed, setShowVideoFeed] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [showMiniplayer, setShowMiniplayer] = useState(false);
+  const [showDeviceSelector, setShowDeviceSelector] = useState(false);
 
   // Library / UI state
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('favorites');
@@ -118,6 +160,9 @@ export const App: React.FC = () => {
   useEffect(() => {
     setShowVideoFeed(false);
     setIsFollowing(false);
+    setShowLyrics(false);
+    setShowMiniplayer(false);
+    setShowDeviceSelector(false);
   }, [currentTrack?.id]);
 
   // Sync spaces list to localStorage
@@ -543,7 +588,27 @@ export const App: React.FC = () => {
 
       {/* Main dashboard viewport panel */}
       <main className="app-main-panel glass-panel">
-        {currentTab === 'home' && (
+        {showLyrics && currentTrack ? (
+          <div className="lyrics-overlay-container animate-fade-in">
+            <button className="close-lyrics-btn" onClick={() => setShowLyrics(false)} title="Close Lyrics">×</button>
+            <div className="lyrics-header">
+              <img src={currentTrack.thumbnail} alt="" className="lyrics-thumb" />
+              <div className="lyrics-track-info">
+                <h2>{currentTrack.title}</h2>
+                <p>{currentTrack.channelTitle}</p>
+              </div>
+            </div>
+            <div className="lyrics-body-scroller">
+              {getLyricsForTrack(currentTrack).map((line, idx) => (
+                <p key={idx} className="lyric-line">
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            {currentTab === 'home' && (
           <div className="home-tab-content">
             <div className="page-header">
               <h1>Welcome to Your Space</h1>
@@ -941,6 +1006,8 @@ export const App: React.FC = () => {
             onInstallPWA={handleInstallPWA}
           />
         )}
+          </>
+        )}
       </main>
 
       {/* Right Sidebar - Now Playing Preview (always mounted to prevent YT Player API crashes) */}
@@ -952,6 +1019,17 @@ export const App: React.FC = () => {
               <div className={showVideoFeed ? 'visible-iframe-wrapper' : 'hidden-iframe-wrapper'}>
                 <YoutubePlayerContainer />
               </div>
+              
+              {/* Toggle Back button when showing video feed */}
+              {showVideoFeed && (
+                <button 
+                  className="show-cover-btn animate-fade-in" 
+                  onClick={() => setShowVideoFeed(false)}
+                  title="Show Cover Art"
+                >
+                  Show Cover Art
+                </button>
+              )}
               
               {/* Cover photo / Vinyl Player Deck displayed when video feed is not active */}
               {!showVideoFeed && (
@@ -1086,7 +1164,93 @@ export const App: React.FC = () => {
             handleSearchOnDemand(track, activeQueue);
           }
         }}
+        showLyrics={showLyrics}
+        onLyricsToggle={() => {
+          setShowLyrics(!showLyrics);
+          setShowMiniplayer(false);
+          setShowDeviceSelector(false);
+        }}
+        showQueue={currentTab === 'library'}
+        onQueueToggle={() => {
+          if (currentTab === 'library') {
+            setCurrentTab('home');
+          } else {
+            setCurrentTab('library');
+          }
+        }}
+        showMiniplayer={showMiniplayer}
+        onMiniplayerToggle={() => {
+          setShowMiniplayer(!showMiniplayer);
+          setShowLyrics(false);
+          setShowDeviceSelector(false);
+        }}
+        showDeviceSelector={showDeviceSelector}
+        onDeviceSelectorToggle={() => {
+          setShowDeviceSelector(!showDeviceSelector);
+          setShowLyrics(false);
+          setShowMiniplayer(false);
+        }}
       />
+
+      {/* Device Selector Popup Card */}
+      {showDeviceSelector && (
+        <div className="device-selector-card glass-panel animate-fade-in">
+          <div className="device-selector-header">
+            <h4>Connect to a device</h4>
+          </div>
+          <div className="device-list">
+            <div className="device-item active">
+              <MonitorPlay size={16} className="active-icon" />
+              <div className="device-info">
+                <h5>Web Player (Active)</h5>
+                <p>This computer</p>
+              </div>
+            </div>
+            <div className="device-item" onClick={() => { alert("Connected to Living Room Speakers"); setShowDeviceSelector(false); }}>
+              <Music size={16} />
+              <div className="device-info">
+                <h5>Living Room Speakers</h5>
+                <p>AirPlay</p>
+              </div>
+            </div>
+            <div className="device-item" onClick={() => { alert("Connected to Surya's Phone"); setShowDeviceSelector(false); }}>
+              <UserIcon size={16} />
+              <div className="device-info">
+                <h5>Surya's Phone</h5>
+                <p>masti Connect</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Miniplayer Float Overlay */}
+      {showMiniplayer && currentTrack && (
+        <div className="miniplayer-card glass-panel animate-fade-in">
+          <div className="miniplayer-header">
+            <span className="miniplayer-tag">Miniplayer</span>
+            <button className="miniplayer-close" onClick={() => setShowMiniplayer(false)}>×</button>
+          </div>
+          <div className="miniplayer-body">
+            <img src={currentTrack.thumbnail} alt="" className="miniplayer-thumb" />
+            <div className="miniplayer-track-info-inner">
+              <h5>{currentTrack.title}</h5>
+              <p>{currentTrack.channelTitle}</p>
+            </div>
+            <div className="miniplayer-actions">
+              <button className="mini-action-btn" onClick={handlePrev} title="Previous">
+                <SkipBack size={16} />
+              </button>
+              <button className="mini-action-btn play-pause" onClick={() => setIsPlaying(!isPlaying)} title={isPlaying ? 'Pause' : 'Play'}>
+                {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+              </button>
+              <button className="mini-action-btn" onClick={handleNext} title="Next">
+                <SkipForward size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overlay modal creating playlists */}
       {showAddPlaylistModal && (

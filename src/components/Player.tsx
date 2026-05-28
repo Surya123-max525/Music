@@ -7,7 +7,12 @@ import {
   Volume2, 
   VolumeX, 
   Repeat, 
-  Shuffle
+  Shuffle,
+  Mic,
+  ListMusic,
+  MonitorPlay,
+  AppWindow,
+  Maximize2
 } from 'lucide-react';
 import type { Track, Space } from '../types';
 
@@ -26,6 +31,15 @@ interface PlayerProps {
   theme: Space['theme'];
   onTrackEnd: () => void;
   onTrackStart: (track: Track) => void;
+  // Spotify style controls
+  showLyrics: boolean;
+  onLyricsToggle: () => void;
+  showQueue: boolean;
+  onQueueToggle: () => void;
+  showMiniplayer: boolean;
+  onMiniplayerToggle: () => void;
+  showDeviceSelector: boolean;
+  onDeviceSelectorToggle: () => void;
 }
 
 declare global {
@@ -50,6 +64,14 @@ export const Player: React.FC<PlayerProps> = ({
   theme,
   onTrackEnd,
   onTrackStart,
+  showLyrics,
+  onLyricsToggle,
+  showQueue,
+  onQueueToggle,
+  showMiniplayer,
+  onMiniplayerToggle,
+  showDeviceSelector,
+  onDeviceSelectorToggle,
 }) => {
   const [player, setPlayer] = useState<any>(null);
   const [isApiReady, setIsApiReady] = useState(false);
@@ -140,6 +162,7 @@ export const Player: React.FC<PlayerProps> = ({
       player.loadVideoById(currentTrack.id);
       onPlayPause(true);
       setCurrentTime(0);
+      setDuration(0);
       onTrackStart(currentTrack);
     } catch (e) {
       console.error('Failed to load YouTube video:', e);
@@ -183,6 +206,12 @@ export const Player: React.FC<PlayerProps> = ({
           if (player.getCurrentTime) {
             const time = player.getCurrentTime();
             setCurrentTime(time);
+          }
+          if (player.getDuration) {
+            const dur = player.getDuration();
+            if (dur > 0) {
+              setDuration(dur);
+            }
           }
         } catch (e) {
           // ignore API exceptions
@@ -235,9 +264,39 @@ export const Player: React.FC<PlayerProps> = ({
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
+  // Fullscreen helper
+  const handleFullscreenToggle = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error enabling fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
     <div className={`player-container glass-panel theme-${theme}`}>
       <div className="player-inner">
+        {/* Left Side: Cover Art, Title, Artist, and Verified Checkmark */}
+        {currentTrack ? (
+          <div className="player-left-controls">
+            <div className="player-track-thumb-wrapper">
+              <img src={currentTrack.thumbnail} alt="" className="track-thumb-img" />
+            </div>
+            <div className="player-track-info">
+              <h4 className="player-track-title" title={currentTrack.title}>
+                {currentTrack.title}
+              </h4>
+              <p className="player-track-channel" title={currentTrack.channelTitle}>
+                {currentTrack.channelTitle}
+                <span className="player-verified-badge" title="Verified Creator">✓</span>
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="player-left-controls"></div>
+        )}
 
         {/* Center Controls: Timeline and Buttons */}
         <div className="player-center-controls">
@@ -302,8 +361,32 @@ export const Player: React.FC<PlayerProps> = ({
           </div>
         </div>
 
-        {/* Right Controls: Volume */}
+        {/* Right Controls: Lyrics, Queue, Device Selector, Volume, PIP, Fullscreen */}
         <div className="player-right-controls">
+          <button 
+            className={`control-btn right-btn ${showLyrics ? 'active-opt' : ''}`}
+            onClick={onLyricsToggle}
+            title="Lyrics"
+          >
+            <Mic size={18} />
+          </button>
+          
+          <button 
+            className={`control-btn right-btn ${showQueue ? 'active-opt' : ''}`}
+            onClick={onQueueToggle}
+            title="Queue"
+          >
+            <ListMusic size={18} />
+          </button>
+          
+          <button 
+            className={`control-btn right-btn ${showDeviceSelector ? 'active-opt' : ''}`}
+            onClick={onDeviceSelectorToggle}
+            title="Connect to a device"
+          >
+            <MonitorPlay size={18} />
+          </button>
+
           <div className="volume-controls">
             <button className="control-btn right-btn" onClick={handleMuteToggle}>
               {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -317,6 +400,22 @@ export const Player: React.FC<PlayerProps> = ({
               onChange={handleVolumeSlider}
             />
           </div>
+
+          <button 
+            className={`control-btn right-btn ${showMiniplayer ? 'active-opt' : ''}`}
+            onClick={onMiniplayerToggle}
+            title="Miniplayer"
+          >
+            <AppWindow size={18} />
+          </button>
+
+          <button 
+            className="control-btn right-btn"
+            onClick={handleFullscreenToggle}
+            title="Fullscreen"
+          >
+            <Maximize2 size={18} />
+          </button>
         </div>
       </div>
     </div>
