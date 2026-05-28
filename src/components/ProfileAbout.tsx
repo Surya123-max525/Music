@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { User, Music, HelpCircle, Key, RefreshCw, BarChart2, ShieldAlert, Sparkles, LogOut, Plus, X } from 'lucide-react';
+import React from 'react';
+import { User, Music, HelpCircle, RefreshCw, BarChart2, Sparkles, LogOut } from 'lucide-react';
 import type { Space, UserPreferences, UserAccount } from '../types';
-import { getApiKey, saveApiKey } from '../utils/youtube';
 
 interface ProfileAboutProps {
   currentSpace: Space;
@@ -20,48 +19,10 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
   userAccount,
   onLogout
 }) => {
-  const [apiKeyInput, setApiKeyInput] = useState(getApiKey());
-  const [isSaved, setIsSaved] = useState(false);
-  const [newArtistInput, setNewArtistInput] = useState('');
-
-  const handleSaveKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveApiKey(apiKeyInput.trim());
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
-  };
-
   // Compile statistics
   const totalFavorites = allSpaces.reduce((acc, s) => acc + s.favorites.length, 0);
   const totalPlaylists = allSpaces.reduce((acc, s) => acc + s.playlists.length, 0);
   const totalHistory = allSpaces.reduce((acc, s) => acc + s.history.length, 0);
-
-  const handleAddArtist = (e: React.FormEvent) => {
-    e.preventDefault();
-    const artist = newArtistInput.trim();
-    if (!artist || !currentSpace.preferences) return;
-    
-    const artists = currentSpace.preferences.artists;
-    if (artists.includes(artist)) {
-      setNewArtistInput('');
-      return;
-    }
-
-    onUpdatePreferences({
-      ...currentSpace.preferences,
-      artists: [...artists, artist]
-    });
-    setNewArtistInput('');
-  };
-
-  const handleRemoveArtist = (artistName: string) => {
-    if (!currentSpace.preferences) return;
-    const artists = currentSpace.preferences.artists.filter((a) => a !== artistName);
-    onUpdatePreferences({
-      ...currentSpace.preferences,
-      artists
-    });
-  };
 
   const handleLangToggle = (lang: string) => {
     if (!currentSpace.preferences) return;
@@ -109,7 +70,7 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
             Current Active Space Theme: <span className={`theme-tag theme-${currentSpace.theme}`}>{currentSpace.theme}</span>
           </p>
 
-          <div className="stats-badges-container">
+          <div className="stats-badges-container" style={{ marginBottom: 20 }}>
             <div className="stat-badge">
               <BarChart2 className="stat-icon" size={20} />
               <span className="stat-value">{currentSpace.favorites.length}</span>
@@ -129,47 +90,9 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
 
           {currentSpace.preferences && (
             <div className="space-preferences-editor">
-              {/* Dynamic Favorite Artist Manager */}
-              <div className="pref-subsection">
-                <h3>My Favorite Artists</h3>
-                
-                <form onSubmit={handleAddArtist} style={{ display: 'flex', gap: 10, margin: '8px 0 15px' }}>
-                  <input
-                    type="text"
-                    placeholder="Search/Add new artist..."
-                    value={newArtistInput}
-                    onChange={(e) => setNewArtistInput(e.target.value)}
-                    className="api-input"
-                    style={{ flex: 1 }}
-                  />
-                  <button type="submit" className="save-api-btn" style={{ background: 'var(--theme-color)', color: '#000', border: 'none', borderRadius: 8, padding: '0 14px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Plus size={14} /> Add
-                  </button>
-                </form>
-
-                <div className="toggle-pill-container">
-                  {currentSpace.preferences.artists.map((artist) => (
-                    <span 
-                      key={artist}
-                      className="custom-artist-capsule"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-light)', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      {artist}
-                      <button 
-                        type="button" 
-                        onClick={() => handleRemoveArtist(artist)}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--text-dark)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                      >
-                        <X size={12} className="hover-white" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
               <div className="pref-subsection">
                 <h3>My Languages</h3>
-                <div className="toggle-pill-container">
+                <div className="toggle-pill-container" style={{ marginTop: 8 }}>
                   {allLanguages.map((l) => {
                     const active = currentSpace.preferences?.languages.includes(l);
                     return (
@@ -185,7 +108,7 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
                 </div>
               </div>
 
-              <button className="reset-wizard-btn" onClick={onResetPreferences}>
+              <button className="reset-wizard-btn" onClick={onResetPreferences} style={{ marginTop: 15 }}>
                 <Sparkles size={14} /> Re-run Preferences Wizard
               </button>
             </div>
@@ -220,40 +143,8 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
       </div>
 
       <div className="profile-grid bottom-grid">
-        {/* API Settings Card */}
-        <div className="glass-panel api-settings-card">
-          <div className="section-header-row">
-            <Key className="icon-amber" size={24} />
-            <h2>YouTube API Key Settings</h2>
-          </div>
-          <p className="card-desc">
-            We use your YouTube API Key to search and load song details. You can update or replace the API key below.
-          </p>
-          <form onSubmit={handleSaveKey} className="api-key-form">
-            <div className="input-group-row">
-              <input
-                type="password"
-                placeholder="Enter YouTube v3 API Key"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                className="api-input"
-              />
-              <button type="submit" className="save-api-btn glow-btn">
-                Save Key
-              </button>
-            </div>
-            {isSaved && <p className="save-indicator">✓ API Key updated successfully!</p>}
-          </form>
-          <div className="api-note">
-            <ShieldAlert size={14} />
-            <span>
-              If you run out of quota, the app will automatically fall back to public search scraping servers (Invidious).
-            </span>
-          </div>
-        </div>
-
         {/* About App Card */}
-        <div className="glass-panel about-app-card">
+        <div className="glass-panel about-app-card" style={{ gridColumn: 'span 2' }}>
           <div className="section-header-row">
             <HelpCircle className="icon-blue" size={24} />
             <h2>About masti music</h2>
@@ -265,7 +156,7 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
             <ul className="features-list">
               <li><strong>Zero Default Tracks</strong>: True query-on-demand search.</li>
               <li><strong>Personal Spaces</strong>: Isolated sandboxes for different moods/users.</li>
-              <li><strong>No Subscriptions</strong>: Stream music using your YouTube API key.</li>
+              <li><strong>High Fidelity</strong>: Stream music files in high definition.</li>
               <li><strong>PWA Compliant</strong>: Fully installable on Android, iOS, and Windows.</li>
             </ul>
             <div className="about-footer">

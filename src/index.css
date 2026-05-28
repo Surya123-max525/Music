@@ -1,18 +1,18 @@
-/* Foundational Styling and Custom Design System - AMOLED Black */
+/* Foundational Styling and Custom Design System - AMOLED Black & Blue */
 
 :root {
   --bg-dark: #000000; /* Pure Black background */
-  --bg-card: rgba(10, 10, 12, 0.75); /* Dark graphite card backings */
-  --border-light: rgba(255, 255, 255, 0.05); /* Refined thin borders */
-  --border-glow: rgba(124, 58, 237, 0.12);
+  --bg-card: rgba(10, 10, 15, 0.8); /* Dark graphite card backings with blue tint */
+  --border-light: rgba(0, 100, 255, 0.08); /* Refined blue border highlight */
+  --border-glow: rgba(0, 68, 255, 0.15);
   
   --text-primary: #f8fafc;
   --text-muted: #94a3b8;
-  --text-dark: #475569;
+  --text-dark: #334155;
   
-  --theme-color: #8b5cf6;
-  --theme-glow: rgba(139, 92, 246, 0.35);
-  --theme-bg-gradient: linear-gradient(180deg, #020205 0%, #000000 100%);
+  --theme-color: #3b82f6; /* Blue as default theme color */
+  --theme-glow: rgba(59, 130, 246, 0.35);
+  --theme-bg-gradient: linear-gradient(180deg, #00001a 0%, #000000 100%); /* Pitch Black with Deep Midnight Blue top */
   
   --font-title: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -21,36 +21,36 @@
   --transition-fast: all 0.2s ease;
 }
 
-/* Space Accent Themes */
+/* Space Accent Themes - All anchored on midnight-blue backings with customizable accents */
 .theme-violet {
   --theme-color: #c084fc;
   --theme-glow: rgba(192, 132, 252, 0.3);
-  --theme-bg-gradient: linear-gradient(180deg, #090212 0%, #000000 100%);
+  --theme-bg-gradient: linear-gradient(180deg, #00001f 0%, #000000 100%);
 }
 .theme-emerald {
   --theme-color: #34d399;
   --theme-glow: rgba(52, 211, 153, 0.3);
-  --theme-bg-gradient: linear-gradient(180deg, #010c07 0%, #000000 100%);
+  --theme-bg-gradient: linear-gradient(180deg, #000318 0%, #000000 100%);
 }
 .theme-crimson {
   --theme-color: #fb7185;
   --theme-glow: rgba(251, 113, 133, 0.3);
-  --theme-bg-gradient: linear-gradient(180deg, #0e0105 0%, #000000 100%);
+  --theme-bg-gradient: linear-gradient(180deg, #05001a 0%, #000000 100%);
 }
 .theme-amber {
   --theme-color: #fbbf24;
   --theme-glow: rgba(251, 191, 36, 0.3);
-  --theme-bg-gradient: linear-gradient(180deg, #0f0701 0%, #000000 100%);
+  --theme-bg-gradient: linear-gradient(180deg, #03011a 0%, #000000 100%);
 }
 .theme-azure {
   --theme-color: #60a5fa;
   --theme-glow: rgba(96, 165, 250, 0.3);
-  --theme-bg-gradient: linear-gradient(180deg, #020815 0%, #000000 100%);
+  --theme-bg-gradient: linear-gradient(180deg, #000028 0%, #000000 100%);
 }
 .theme-rose {
   --theme-color: #f472b6;
   --theme-glow: rgba(244, 114, 182, 0.3);
-  --theme-bg-gradient: linear-gradient(180deg, #0e0108 0%, #000000 100%);
+  --theme-bg-gradient: linear-gradient(180deg, #02001a 0%, #000000 100%);
 }
 
 .theme-bg-violet { background-color: #c084fc; }
@@ -92,27 +92,27 @@ h1, h2, h3, h4, h5 {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 120, 255, 0.1);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--theme-color);
 }
 
-/* Glassmorphism panels (Pure Black theme adjustments) */
+/* Glassmorphism panels (Pure Black and Blue adjustments) */
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: blur(25px) saturate(200%);
   -webkit-backdrop-filter: blur(25px) saturate(200%);
   border: 1px solid var(--border-light);
   border-radius: 16px;
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.8);
+  box-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.9);
   transition: var(--transition-smooth);
 }
 
 .glass-panel:hover {
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.9), 0 0 15px 0 var(--theme-glow);
+  border-color: rgba(0, 136, 255, 0.2);
+  box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.95), 0 0 15px 0 var(--theme-glow);
 }
 
 /* Onboarding Wizard Styles */
@@ -143,22 +143,22 @@ h1, h2, h3, h4, h5 {
   position: absolute;
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.15;
+  opacity: 0.2;
 }
 
 .glow-1 {
-  width: 320px;
-  height: 320px;
-  background-color: #7c3aed;
+  width: 350px;
+  height: 350px;
+  background-color: #0044ff; /* Royal Blue */
   top: 15%;
   left: 15%;
   animation: float-slow 12s infinite alternate;
 }
 
 .glow-2 {
-  width: 380px;
-  height: 380px;
-  background-color: #db2777;
+  width: 400px;
+  height: 400px;
+  background-color: #00bfff; /* Cyan */
   bottom: 15%;
   right: 15%;
   animation: float-slow 16s infinite alternate-reverse;
@@ -166,13 +166,13 @@ h1, h2, h3, h4, h5 {
 
 .onboarding-card {
   width: 90%;
-  max-width: 500px;
-  background: rgba(10, 10, 12, 0.85);
+  max-width: 480px;
+  background: rgba(10, 10, 15, 0.85);
   backdrop-filter: blur(35px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 100, 255, 0.15);
   border-radius: 24px;
   padding: 35px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 85, 255, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -188,12 +188,12 @@ h1, h2, h3, h4, h5 {
   width: 60px;
   height: 60px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  background: linear-gradient(135deg, #0044ff 0%, #00bfff 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 0 auto 12px;
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 85, 255, 0.4);
 }
 
 .brand-logo-icon {
@@ -204,7 +204,7 @@ h1, h2, h3, h4, h5 {
   font-size: 2.1rem;
   font-weight: 800;
   margin-bottom: 6px;
-  background: linear-gradient(135deg, #fff 40%, #c084fc 100%);
+  background: linear-gradient(135deg, #fff 40%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -249,8 +249,8 @@ h1, h2, h3, h4, h5 {
 }
 
 .preference-pill {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(0, 100, 255, 0.08);
   border-radius: 30px;
   color: #cbd5e1;
   padding: 8px 16px;
@@ -264,119 +264,25 @@ h1, h2, h3, h4, h5 {
 }
 
 .preference-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 100, 255, 0.05);
+  border-color: rgba(0, 120, 255, 0.25);
   transform: translateY(-1px);
 }
 
 .preference-pill.selected {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-  border-color: #8b5cf6;
+  background: linear-gradient(135deg, #0044ff 0%, #002288 100%);
+  border-color: #3b82f6;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 68, 255, 0.35);
 }
 
 .pill-check-icon {
   animation: pop-scale 0.2s ease;
 }
 
-/* Custom Artist onboarding elements */
-.custom-artist-form {
-  display: flex;
-  width: 100%;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.custom-artist-form input {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 20px;
-  color: #fff;
-  padding: 10px 16px;
-  font-size: 0.85rem;
-  font-family: var(--font-body);
-}
-
-.custom-artist-form input:focus {
-  outline: none;
-  border-color: #7c3aed;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.add-artist-pill-btn {
-  background: #7c3aed;
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  padding: 0 16px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: var(--transition-fast);
-}
-
-.add-artist-pill-btn:hover {
-  background: #6d28d9;
-}
-
-.selected-custom-artists-box {
-  width: 100%;
-  text-align: left;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  padding: 12px;
-  margin-bottom: 20px;
-}
-
-.selected-custom-artists-box h4 {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
-.custom-pills-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  max-height: 80px;
-  overflow-y: auto;
-}
-
-.custom-artist-capsule {
-  background: rgba(124, 58, 237, 0.1);
-  border: 1px solid rgba(124, 58, 237, 0.25);
-  color: #c084fc;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 15px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.custom-artist-capsule button {
-  background: transparent;
-  border: none;
-  color: #c084fc;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-}
-
-.custom-artist-capsule button:hover {
-  color: #fff;
-}
-
 /* Button Configurations */
 .onboarding-btn {
-  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  background: linear-gradient(135deg, #0044ff 0%, #00bfff 100%);
   border: none;
   border-radius: 30px;
   color: #fff;
@@ -388,58 +294,13 @@ h1, h2, h3, h4, h5 {
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 8px 16px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 8px 16px rgba(0, 85, 255, 0.35);
   transition: var(--transition-smooth);
 }
 
 .onboarding-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.35);
-}
-
-.onboarding-buttons {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  justify-content: center;
-}
-
-.onboarding-btn-secondary {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 30px;
-  color: var(--text-muted);
-  padding: 12px 24px;
-  font-family: var(--font-title);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.onboarding-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: #fff;
-}
-
-.step-indicator {
-  display: flex;
-  gap: 6px;
-  margin-top: 25px;
-}
-
-.indicator-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  transition: var(--transition-fast);
-}
-
-.indicator-dot.active {
-  width: 18px;
-  border-radius: 3px;
-  background: #7c3aed;
+  box-shadow: 0 10px 20px rgba(0, 85, 255, 0.45);
 }
 
 /* Google Sign-in Login Gate Overlay Styles */
@@ -470,13 +331,13 @@ h1, h2, h3, h4, h5 {
   position: absolute;
   border-radius: 50%;
   filter: blur(130px);
-  opacity: 0.12;
+  opacity: 0.15;
 }
 
 .glow-primary {
   width: 380px;
   height: 380px;
-  background-color: #7c3aed;
+  background-color: #0044ff; /* Royal Blue */
   top: -80px;
   right: -50px;
 }
@@ -484,7 +345,7 @@ h1, h2, h3, h4, h5 {
 .glow-secondary {
   width: 440px;
   height: 440px;
-  background-color: #db2777;
+  background-color: #00bfff; /* Cyan */
   bottom: -100px;
   left: -80px;
 }
@@ -492,12 +353,12 @@ h1, h2, h3, h4, h5 {
 .login-card {
   width: 90%;
   max-width: 440px;
-  background: rgba(12, 12, 14, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(10, 10, 15, 0.85);
+  border: 1px solid rgba(0, 100, 255, 0.15);
   border-radius: 28px;
   padding: 45px 35px;
   text-align: center;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.95);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.98);
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -515,11 +376,11 @@ h1, h2, h3, h4, h5 {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  background: linear-gradient(135deg, #0044ff 0%, #00bfff 100%);
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 10px 25px rgba(0, 85, 255, 0.4);
 }
 
 .login-logo-icon {
@@ -529,7 +390,7 @@ h1, h2, h3, h4, h5 {
 .login-brand h1 {
   font-size: 2.3rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #fff 40%, #c084fc 100%);
+  background: linear-gradient(135deg, #fff 40%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

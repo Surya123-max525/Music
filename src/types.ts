@@ -14,8 +14,7 @@ export interface Playlist {
 }
 
 export interface UserPreferences {
-  artists: string[]; // Replaced genres with artists
-  languages: string[];
+  languages: string[]; // Focus on languages, removed artists
   isOnboarded: boolean;
 }
 

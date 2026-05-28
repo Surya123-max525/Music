@@ -1,6 +1,6 @@
 import type { Track } from '../types';
 
-export const DEFAULT_API_KEY = 'AIzaSyAM8zghSU60PtCtTFrQPo3YPllHNeaFHH0';
+export const DEFAULT_API_KEY = 'AIzaSyCuHboaVwoiAI75nERPSL7PaXCJMBWEyu4';
 
 export function getApiKey(): string {
   const savedKey = localStorage.getItem('yt_music_api_key');
@@ -155,18 +155,16 @@ export async function fetchYouTubePlaylist(playlistId: string, apiKey: string = 
 
 // Get suggestion songs based on preferences
 export async function getSuggestions(
-  artists: string[],
   languages: string[],
   apiKey: string = getApiKey()
 ): Promise<Track[]> {
-  if (artists.length === 0 && languages.length === 0) {
+  if (languages.length === 0) {
     return searchYouTube('popular songs', apiKey);
   }
 
-  // Choose a random combination to keep suggestions fresh
-  const selectedArtist = artists[Math.floor(Math.random() * artists.length)] || '';
+  // Choose a random language to keep suggestions fresh
   const selectedLang = languages[Math.floor(Math.random() * languages.length)] || '';
-  const query = `${selectedArtist} ${selectedLang} songs`.trim();
+  const query = `${selectedLang} popular music hits`.trim();
 
   return searchYouTube(query, apiKey);
 }

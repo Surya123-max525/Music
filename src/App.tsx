@@ -134,7 +134,6 @@ export const App: React.FC = () => {
       setSuggestionsLoading(true);
       try {
         const results = await getSuggestions(
-          currentSpace.preferences.artists,
           currentSpace.preferences.languages
         );
         setSuggestions(results);
