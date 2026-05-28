@@ -38,6 +38,17 @@ const DEFAULT_SPACES: Space[] = [
   }
 ];
 
+// React class component that returns false in shouldComponentUpdate
+// to shield the YouTube player iframe node from React virtual DOM re-renders.
+class YoutubePlayerContainer extends React.Component {
+  shouldComponentUpdate() {
+    return false;
+  }
+  render() {
+    return <div id="youtube-player-iframe"></div>;
+  }
+}
+
 export const App: React.FC = () => {
   // Navigation Tabs: 'home' | 'search' | 'library' | 'profile' | 'downloads'
   const [currentTab, setCurrentTab] = useState<'home' | 'search' | 'library' | 'profile' | 'downloads'>('home');
@@ -459,7 +470,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`app-wrapper theme-${currentSpace.theme}`}>
+    <div className={`app-wrapper theme-${currentSpace.theme} ${isPlaying ? 'app-is-playing' : ''}`}>
       {/* Background visual glows */}
       <div className="app-bg-glows">
         <div className="app-glow-circle app-glow-1"></div>
@@ -937,19 +948,39 @@ export const App: React.FC = () => {
         {currentTrack && (
           <>
             <div className="sidebar-video-container">
-              {/* Always mounted YT player iframe, hidden when showing cover photo */}
-              <div 
-                id="youtube-player-iframe" 
-                className={showVideoFeed ? 'visible-iframe' : 'hidden-iframe'}
-              ></div>
+              {/* Always mounted YT player iframe wrapper to preserve video playing state */}
+              <div className={showVideoFeed ? 'visible-iframe-wrapper' : 'hidden-iframe-wrapper'}>
+                <YoutubePlayerContainer />
+              </div>
               
-              {/* Cover photo displayed when video feed is not active */}
+              {/* Cover photo / Vinyl Player Deck displayed when video feed is not active */}
               {!showVideoFeed && (
-                <div className="video-cover-overlay" onClick={() => setShowVideoFeed(true)}>
-                  <img src={currentTrack.thumbnail} alt="" className="video-cover-img" />
-                  <div className="play-video-hover-btn">
-                    <Play size={22} fill="currentColor" style={{ marginLeft: 2 }} />
-                    <span>Watch Video</span>
+                <div className={`vinyl-player-deck ${isPlaying ? 'is-playing' : ''}`}>
+                  {/* Sleeve */}
+                  <div className="vinyl-sleeve" onClick={() => setShowVideoFeed(true)} title="Click to watch Video Feed">
+                    <img src={currentTrack.thumbnail} alt="" className="video-cover-img sleeve-img" />
+                    <div className="play-video-hover-btn">
+                      <Play size={22} fill="currentColor" style={{ marginLeft: 2 }} />
+                      <span>Watch Video</span>
+                    </div>
+                  </div>
+                  
+                  {/* Vinyl Record */}
+                  <div className="vinyl-record">
+                    <div className="vinyl-record-disc-wrapper">
+                      <div className="vinyl-grooves"></div>
+                      <div className="vinyl-label" style={{ backgroundImage: `url(${currentTrack.thumbnail})` }}>
+                        <div className="vinyl-center-spindle"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tonearm */}
+                  <div className="tonearm-housing">
+                    <div className="tonearm-base"></div>
+                    <div className="tonearm-arm">
+                      <div className="tonearm-headshell"></div>
+                    </div>
                   </div>
                 </div>
               )}

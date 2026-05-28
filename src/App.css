@@ -54,7 +54,7 @@
   margin: 12px 0 12px 12px;
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
+  padding: 24px 16px 110px 16px;
   z-index: 5;
   flex-shrink: 0;
   overflow-y: auto;
@@ -1856,7 +1856,7 @@
   margin: 12px 12px 12px 0;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 16px 16px 110px 16px;
   z-index: 5;
   flex-shrink: 0;
   overflow-y: auto;
@@ -1940,7 +1940,8 @@
 }
 
 /* Toggleable Video/Cover Art Styles in Right Sidebar */
-.hidden-iframe {
+/* Toggleable Video/Cover Art Wrapper Styles in Right Sidebar */
+.hidden-iframe-wrapper {
   position: absolute;
   top: 0;
   left: 0;
@@ -1951,7 +1952,7 @@
   z-index: 1;
 }
 
-.visible-iframe {
+.visible-iframe-wrapper {
   position: relative;
   width: 100% !important;
   height: 100% !important;
@@ -1960,27 +1961,46 @@
   z-index: 3;
 }
 
-.video-cover-overlay {
+/* Vinyl Player Deck Styles */
+.vinyl-player-deck {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  cursor: pointer;
+  background: radial-gradient(circle at 75% 35%, rgba(20, 20, 30, 0.9) 0%, rgba(5, 5, 10, 0.96) 100%);
+  border-radius: 12px;
   overflow: hidden;
-  border-radius: 8px;
+  box-shadow: inset 0 0 24px rgba(0, 100, 255, 0.08), 0 8px 30px rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.03);
   z-index: 2;
 }
 
-.video-cover-img {
+/* Vinyl Sleeve */
+.vinyl-sleeve {
+  width: 145px;
+  height: 145px;
+  position: absolute;
+  left: 15px;
+  top: calc(50% - 72.5px);
+  z-index: 3;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 6px 10px 28px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transform: translateZ(0);
+  transition: transform 0.3s ease;
+}
+
+.sleeve-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
 }
 
-.video-cover-overlay:hover .video-cover-img {
-  transform: scale(1.05);
+.vinyl-sleeve:hover .sleeve-img {
+  transform: scale(1.06);
 }
 
 .play-video-hover-btn {
@@ -1989,7 +2009,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1997,19 +2017,201 @@
   gap: 8px;
   opacity: 0;
   transition: opacity 0.3s ease;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
 }
 
-.video-cover-overlay:hover .play-video-hover-btn {
+.vinyl-sleeve:hover .play-video-hover-btn {
   opacity: 1;
 }
 
 .play-video-hover-btn span {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* Vinyl Record */
+.vinyl-record {
+  width: 138px;
+  height: 138px;
+  position: absolute;
+  left: 18px;
+  top: calc(50% - 69px);
+  z-index: 2;
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+.vinyl-record-disc-wrapper {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: relative;
+  background: radial-gradient(circle, #080808 15%, #1c1c1c 22%, #0e0e0e 30%, #1a1a1a 42%, #0a0a0a 50%, #151515 62%, #000 72%);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Grooves pattern */
+.vinyl-grooves {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.035) 0px,
+    rgba(255, 255, 255, 0.035) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.9;
+}
+
+/* Vinyl label in center */
+.vinyl-label {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.6);
+}
+
+.vinyl-center-spindle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Tonearm needle representation */
+.tonearm-housing {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  width: 40px;
+  height: 90px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.tonearm-base {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #999 0%, #3e3e3e 70%, #111 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.4);
+  margin: 0 auto;
+}
+
+.tonearm-arm {
+  width: 4px;
+  height: 56px;
+  background: linear-gradient(to right, #ccc, #777, #ccc);
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  transform-origin: top center;
+  transform: rotate(-22deg);
+  transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.35);
+}
+
+.tonearm-arm::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: -2px;
+  width: 8px;
+  height: 8px;
+  background: #666;
+  border-radius: 50%;
+}
+
+.tonearm-headshell {
+  width: 8px;
+  height: 15px;
+  background: linear-gradient(135deg, #555 0%, #151515 100%);
+  border: 1px solid rgba(255,255,255,0.12);
+  position: absolute;
+  bottom: -15px;
+  left: -2px;
+  transform: rotate(20deg);
+  border-radius: 2px 2px 4px 4px;
+}
+
+/* Play state interactions */
+.vinyl-player-deck.is-playing .vinyl-record {
+  transform: translateX(54px);
+}
+
+.vinyl-player-deck.is-playing .vinyl-record-disc-wrapper {
+  animation: spin 5s linear infinite;
+}
+
+.vinyl-player-deck.is-playing .tonearm-arm {
+  transform: rotate(14deg);
+}
+
+/* Ambient Glow Animations when Playing */
+@keyframes ambient-pulse-1 {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    filter: blur(140px);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translate(40px, -20px) scale(1.15) rotate(180deg);
+    filter: blur(160px);
+    opacity: 0.24;
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(360deg);
+    filter: blur(140px);
+    opacity: 0.15;
+  }
+}
+
+@keyframes ambient-pulse-2 {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    filter: blur(140px);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translate(-30px, 30px) scale(1.12) rotate(-180deg);
+    filter: blur(170px);
+    opacity: 0.22;
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(-360deg);
+    filter: blur(140px);
+    opacity: 0.15;
+  }
+}
+
+.app-is-playing .app-glow-1 {
+  animation: ambient-pulse-1 12s infinite alternate ease-in-out;
+}
+
+.app-is-playing .app-glow-2 {
+  animation: ambient-pulse-2 16s infinite alternate ease-in-out;
 }
 
 /* Spotify Right Sidebar Panels */
