@@ -155,18 +155,18 @@ export async function fetchYouTubePlaylist(playlistId: string, apiKey: string = 
 
 // Get suggestion songs based on preferences
 export async function getSuggestions(
-  genres: string[],
+  artists: string[],
   languages: string[],
   apiKey: string = getApiKey()
 ): Promise<Track[]> {
-  if (genres.length === 0 && languages.length === 0) {
+  if (artists.length === 0 && languages.length === 0) {
     return searchYouTube('popular songs', apiKey);
   }
 
   // Choose a random combination to keep suggestions fresh
-  const selectedGenre = genres[Math.floor(Math.random() * genres.length)] || '';
+  const selectedArtist = artists[Math.floor(Math.random() * artists.length)] || '';
   const selectedLang = languages[Math.floor(Math.random() * languages.length)] || '';
-  const query = `${selectedLang} ${selectedGenre} music hits`.trim();
+  const query = `${selectedArtist} ${selectedLang} songs`.trim();
 
   return searchYouTube(query, apiKey);
 }

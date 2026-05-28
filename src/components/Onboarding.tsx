@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
-import { Music, Check, ArrowRight } from 'lucide-react';
+import { Music, Check, ArrowRight, Plus, X } from 'lucide-react';
 import type { UserPreferences } from '../types';
 
 interface OnboardingProps {
   onComplete: (prefs: UserPreferences) => void;
 }
 
-const AVAILABLE_GENRES = [
-  { id: 'pop', name: 'Pop' },
-  { id: 'rock', name: 'Rock' },
-  { id: 'hiphop', name: 'Hip-Hop' },
-  { id: 'lofi', name: 'Lo-Fi / Chill' },
-  { id: 'edm', name: 'EDM / Dance' },
-  { id: 'classical', name: 'Classical' },
-  { id: 'jazz', name: 'Jazz & Blues' },
-  { id: 'acoustic', name: 'Acoustic / Folk' },
-  { id: 'metal', name: 'Heavy Metal' },
-  { id: 'ambient', name: 'Ambient & Focus' }
+const PRESET_ARTISTS = [
+  'Taylor Swift',
+  'Arijit Singh',
+  'Coldplay',
+  'Ed Sheeran',
+  'Drake',
+  'Billie Eilish',
+  'The Weeknd',
+  'BTS',
+  'Shreya Ghoshal',
+  'Linkin Park',
+  'Post Malone',
+  'Eminem',
+  'Justin Bieber',
+  'Dua Lipa'
 ];
 
 const AVAILABLE_LANGUAGES = [
@@ -31,14 +35,31 @@ const AVAILABLE_LANGUAGES = [
 ];
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [customArtistInput, setCustomArtistInput] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
 
-  const toggleGenre = (genreName: string) => {
-    setSelectedGenres((prev) =>
-      prev.includes(genreName) ? prev.filter((g) => g !== genreName) : [...prev, genreName]
+  const togglePresetArtist = (artistName: string) => {
+    setSelectedArtists((prev) =>
+      prev.includes(artistName) ? prev.filter((a) => a !== artistName) : [...prev, artistName]
     );
+  };
+
+  const handleAddCustomArtist = (e: React.FormEvent) => {
+    e.preventDefault();
+    const artist = customArtistInput.trim();
+    if (!artist) return;
+    if (selectedArtists.includes(artist)) {
+      setCustomArtistInput('');
+      return;
+    }
+    setSelectedArtists((prev) => [...prev, artist]);
+    setCustomArtistInput('');
+  };
+
+  const handleRemoveArtist = (artistName: string) => {
+    setSelectedArtists((prev) => prev.filter((a) => a !== artistName));
   };
 
   const toggleLanguage = (langName: string) => {
@@ -56,12 +77,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   const handleFinish = () => {
-    if (selectedGenres.length === 0) {
-      alert('Please select at least one genre!');
+    if (selectedArtists.length === 0) {
+      alert('Please select or add at least one artist!');
       return;
     }
     onComplete({
-      genres: selectedGenres,
+      artists: selectedArtists,
       languages: selectedLanguages,
       isOnboarded: true,
     });
@@ -76,7 +97,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       
       <div className="onboarding-card">
         <div className="onboarding-header">
-          <div className="brand-logo-container">
+          <div className="brand-logo-container animate-glow">
             <Music className="brand-logo-icon animated-logo" size={32} />
           </div>
           <h1>masti music</h1>
@@ -110,24 +131,59 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           </div>
         ) : (
           <div className="onboarding-step-content animate-fade-in">
-            <h2>Select your Favorite Genres</h2>
-            <p className="step-desc">What kinds of music get you moving?</p>
+            <h2>Who are your Favorite Artists?</h2>
+            <p className="step-desc">Select popular names or search any custom artist</p>
+
+            {/* Custom Artist search & add bar */}
+            <form onSubmit={handleAddCustomArtist} className="custom-artist-form">
+              <input
+                type="text"
+                placeholder="Type and add any artist (e.g. Coldplay)"
+                value={customArtistInput}
+                onChange={(e) => setCustomArtistInput(e.target.value)}
+                maxLength={30}
+              />
+              <button type="submit" className="add-artist-pill-btn">
+                <Plus size={18} /> Add
+              </button>
+            </form>
             
-            <div className="preference-grid">
-              {AVAILABLE_GENRES.map((genre) => {
-                const isSelected = selectedGenres.includes(genre.name);
+            {/* Curated list of popular artists */}
+            <div className="preference-grid" style={{ maxHeight: '180px', marginBottom: '20px' }}>
+              {PRESET_ARTISTS.map((artist) => {
+                const isSelected = selectedArtists.includes(artist);
                 return (
                   <button
-                    key={genre.id}
+                    key={artist}
                     className={`preference-pill ${isSelected ? 'selected' : ''}`}
-                    onClick={() => toggleGenre(genre.name)}
+                    onClick={() => togglePresetArtist(artist)}
                   >
-                    {genre.name}
+                    {artist}
                     {isSelected && <Check size={16} className="pill-check-icon" />}
                   </button>
                 );
               })}
             </div>
+
+            {/* Selected Custom Artists List */}
+            {selectedArtists.some(a => !PRESET_ARTISTS.includes(a)) && (
+              <div className="selected-custom-artists-box">
+                <h4>Added Artists:</h4>
+                <div className="custom-pills-row">
+                  {selectedArtists
+                    .filter(a => !PRESET_ARTISTS.includes(a))
+                    .map(artist => (
+                      <span key={artist} className="custom-artist-capsule">
+                        {artist}
+                        <button type="button" onClick={() => handleRemoveArtist(artist)}>
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
 
             <div className="onboarding-buttons">
               <button className="onboarding-btn-secondary" onClick={() => setStep(1)}>

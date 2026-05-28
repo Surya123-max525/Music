@@ -14,9 +14,15 @@ export interface Playlist {
 }
 
 export interface UserPreferences {
-  genres: string[];
+  artists: string[]; // Replaced genres with artists
   languages: string[];
   isOnboarded: boolean;
+}
+
+export interface UserAccount {
+  name: string;
+  email: string;
+  picture?: string;
 }
 
 export interface Space {

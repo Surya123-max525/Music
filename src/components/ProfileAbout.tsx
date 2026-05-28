@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { User, Music, HelpCircle, Key, RefreshCw, BarChart2, ShieldAlert, Sparkles } from 'lucide-react';
-import type { Space, UserPreferences } from '../types';
+import { User, Music, HelpCircle, Key, RefreshCw, BarChart2, ShieldAlert, Sparkles, LogOut, Plus, X } from 'lucide-react';
+import type { Space, UserPreferences, UserAccount } from '../types';
 import { getApiKey, saveApiKey } from '../utils/youtube';
 
 interface ProfileAboutProps {
@@ -8,16 +8,21 @@ interface ProfileAboutProps {
   allSpaces: Space[];
   onUpdatePreferences: (prefs: UserPreferences) => void;
   onResetPreferences: () => void;
+  userAccount: UserAccount | null;
+  onLogout: () => void;
 }
 
 export const ProfileAbout: React.FC<ProfileAboutProps> = ({
   currentSpace,
   allSpaces,
   onUpdatePreferences,
-  onResetPreferences
+  onResetPreferences,
+  userAccount,
+  onLogout
 }) => {
   const [apiKeyInput, setApiKeyInput] = useState(getApiKey());
   const [isSaved, setIsSaved] = useState(false);
+  const [newArtistInput, setNewArtistInput] = useState('');
 
   const handleSaveKey = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,15 +36,31 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
   const totalPlaylists = allSpaces.reduce((acc, s) => acc + s.playlists.length, 0);
   const totalHistory = allSpaces.reduce((acc, s) => acc + s.history.length, 0);
 
-  const handleGenreToggle = (genre: string) => {
-    if (!currentSpace.preferences) return;
-    const genres = currentSpace.preferences.genres;
-    const newGenres = genres.includes(genre)
-      ? genres.filter((g) => g !== genre)
-      : [...genres, genre];
-    if (newGenres.length > 0) {
-      onUpdatePreferences({ ...currentSpace.preferences, genres: newGenres });
+  const handleAddArtist = (e: React.FormEvent) => {
+    e.preventDefault();
+    const artist = newArtistInput.trim();
+    if (!artist || !currentSpace.preferences) return;
+    
+    const artists = currentSpace.preferences.artists;
+    if (artists.includes(artist)) {
+      setNewArtistInput('');
+      return;
     }
+
+    onUpdatePreferences({
+      ...currentSpace.preferences,
+      artists: [...artists, artist]
+    });
+    setNewArtistInput('');
+  };
+
+  const handleRemoveArtist = (artistName: string) => {
+    if (!currentSpace.preferences) return;
+    const artists = currentSpace.preferences.artists.filter((a) => a !== artistName);
+    onUpdatePreferences({
+      ...currentSpace.preferences,
+      artists
+    });
   };
 
   const handleLangToggle = (lang: string) => {
@@ -53,11 +74,30 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
     }
   };
 
-  const allGenres = ['Pop', 'Rock', 'Hip-Hop', 'Lo-Fi / Chill', 'EDM / Dance', 'Classical', 'Jazz & Blues', 'Acoustic / Folk', 'Heavy Metal', 'Ambient & Focus'];
   const allLanguages = ['English', 'Hindi', 'Spanish', 'Japanese / Anime', 'Korean / K-Pop', 'Punjabi', 'French', 'Tamil'];
 
   return (
-    <div className="profile-about-container">
+    <div className="profile-about-container animate-fade-in">
+      {/* Logged in Google User Account Header Card */}
+      {userAccount && (
+        <div className="glass-panel profile-account-header-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <img 
+              src={userAccount.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'} 
+              alt={userAccount.name} 
+              style={{ width: 56, height: 56, borderRadius: '50%', border: '2px solid var(--theme-color)', objectFit: 'cover' }}
+            />
+            <div>
+              <h2 style={{ fontSize: '1.25rem', color: '#fff', fontWeight: 700 }}>{userAccount.name}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{userAccount.email}</p>
+            </div>
+          </div>
+          <button onClick={onLogout} className="logout-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '10px 16px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, transition: 'all 0.2s' }}>
+            <LogOut size={16} /> Log Out
+          </button>
+        </div>
+      )}
+
       <div className="profile-grid">
         {/* User Space Profile Dashboard */}
         <div className="glass-panel profile-stats-card">
@@ -89,21 +129,41 @@ export const ProfileAbout: React.FC<ProfileAboutProps> = ({
 
           {currentSpace.preferences && (
             <div className="space-preferences-editor">
+              {/* Dynamic Favorite Artist Manager */}
               <div className="pref-subsection">
-                <h3>My Genres</h3>
+                <h3>My Favorite Artists</h3>
+                
+                <form onSubmit={handleAddArtist} style={{ display: 'flex', gap: 10, margin: '8px 0 15px' }}>
+                  <input
+                    type="text"
+                    placeholder="Search/Add new artist..."
+                    value={newArtistInput}
+                    onChange={(e) => setNewArtistInput(e.target.value)}
+                    className="api-input"
+                    style={{ flex: 1 }}
+                  />
+                  <button type="submit" className="save-api-btn" style={{ background: 'var(--theme-color)', color: '#000', border: 'none', borderRadius: 8, padding: '0 14px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Plus size={14} /> Add
+                  </button>
+                </form>
+
                 <div className="toggle-pill-container">
-                  {allGenres.map((g) => {
-                    const active = currentSpace.preferences?.genres.includes(g);
-                    return (
-                      <button
-                        key={g}
-                        className={`toggle-pill ${active ? 'active' : ''}`}
-                        onClick={() => handleGenreToggle(g)}
+                  {currentSpace.preferences.artists.map((artist) => (
+                    <span 
+                      key={artist}
+                      className="custom-artist-capsule"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-light)', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      {artist}
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveArtist(artist)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-dark)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                       >
-                        {g}
+                        <X size={12} className="hover-white" />
                       </button>
-                    );
-                  })}
+                    </span>
+                  ))}
                 </div>
               </div>
 

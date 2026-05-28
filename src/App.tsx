@@ -12,7 +12,7 @@ import {
   Trash2, 
   Play
 } from 'lucide-react';
-import type { Track, Playlist, Space, UserPreferences } from './types';
+import type { Track, Playlist, Space, UserPreferences, UserAccount } from './types';
 import { Onboarding } from './components/Onboarding';
 import { SpaceSelector } from './components/SpaceSelector';
 import { Player } from './components/Player';
@@ -20,6 +20,7 @@ import { Visualizer } from './components/Visualizer';
 import { PlaylistImporter } from './components/PlaylistImporter';
 import { ProfileAbout } from './components/ProfileAbout';
 import { Downloads } from './components/Downloads';
+import { Login } from './components/Login';
 import { searchYouTube, getSuggestions } from './utils/youtube';
 import './App.css';
 
@@ -42,6 +43,7 @@ export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<'home' | 'search' | 'library' | 'profile' | 'downloads'>('home');
   const [activeSpaceId, setActiveSpaceId] = useState<string>('personal');
   const [spaces, setSpaces] = useState<Space[]>(DEFAULT_SPACES);
+  const [userAccount, setUserAccount] = useState<UserAccount | null>(null);
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,7 +72,7 @@ export const App: React.FC = () => {
   // PWA installation trigger prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // Load spaces state from localStorage on init
+  // Load spaces and login details from localStorage on init
   useEffect(() => {
     const savedSpaces = localStorage.getItem('masti_music_spaces');
     if (savedSpaces) {
@@ -81,6 +83,15 @@ export const App: React.FC = () => {
         }
       } catch (e) {
         console.error('Failed to parse saved spaces, using defaults', e);
+      }
+    }
+
+    const savedUser = localStorage.getItem('masti_music_user');
+    if (savedUser) {
+      try {
+        setUserAccount(JSON.parse(savedUser));
+      } catch (e) {
+        console.error('Failed to parse saved user', e);
       }
     }
 
@@ -97,6 +108,19 @@ export const App: React.FC = () => {
     localStorage.setItem('masti_music_spaces', JSON.stringify(updatedSpaces));
   };
 
+  const handleLogin = (account: UserAccount) => {
+    setUserAccount(account);
+    localStorage.setItem('masti_music_user', JSON.stringify(account));
+    setCurrentTab('home');
+  };
+
+  const handleLogout = () => {
+    setUserAccount(null);
+    localStorage.removeItem('masti_music_user');
+    setIsPlaying(false);
+    setCurrentTrack(null);
+  };
+
   const currentSpace = spaces.find((s) => s.id === activeSpaceId) || spaces[0];
 
   // Fetch recommendations based on preferences when space or preferences change
@@ -110,7 +134,7 @@ export const App: React.FC = () => {
       setSuggestionsLoading(true);
       try {
         const results = await getSuggestions(
-          currentSpace.preferences.genres,
+          currentSpace.preferences.artists,
           currentSpace.preferences.languages
         );
         setSuggestions(results);
@@ -423,6 +447,10 @@ export const App: React.FC = () => {
   };
 
 
+
+  if (!userAccount) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div className={`app-wrapper theme-${currentSpace.theme}`}>
@@ -885,6 +913,8 @@ export const App: React.FC = () => {
             allSpaces={spaces}
             onUpdatePreferences={updatePreferences}
             onResetPreferences={resetPreferences}
+            userAccount={userAccount}
+            onLogout={handleLogout}
           />
         )}
 
