@@ -518,6 +518,25 @@ export const App: React.FC = () => {
             <span>Downloads</span>
           </button>
         </nav>
+        {/* Sidebar Now Playing Preview (always mounted to prevent YT Player API crashes) */}
+        <div className={`sidebar-now-playing glass-panel ${currentTrack ? 'visible' : 'hidden'}`}>
+          <div className="sidebar-video-container">
+            <div id="youtube-player-iframe"></div>
+          </div>
+          {currentTrack && (
+            <div className="sidebar-track-details">
+              <img 
+                src={currentTrack.thumbnail} 
+                alt={currentTrack.title} 
+                className={`sidebar-track-thumb ${isPlaying ? 'rotating-disc' : ''}`}
+              />
+              <div className="sidebar-track-info">
+                <h4 className="sidebar-track-title" title={currentTrack.title}>{currentTrack.title}</h4>
+                <p className="sidebar-track-channel" title={currentTrack.channelTitle}>{currentTrack.channelTitle}</p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Floating audio visualizer */}
         <Visualizer isPlaying={isPlaying} theme={currentSpace.theme} volume={volume} />

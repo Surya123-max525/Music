@@ -7,10 +7,7 @@ import {
   Volume2, 
   VolumeX, 
   Repeat, 
-  Shuffle, 
-  Tv, 
-  Tv2,
-  Minimize2
+  Shuffle
 } from 'lucide-react';
 import type { Track, Space } from '../types';
 
@@ -58,7 +55,6 @@ export const Player: React.FC<PlayerProps> = ({
   const [isApiReady, setIsApiReady] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showVideo, setShowVideo] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(volume);
   const timelineIntervalRef = useRef<number | null>(null);
@@ -241,44 +237,7 @@ export const Player: React.FC<PlayerProps> = ({
 
   return (
     <div className={`player-container glass-panel theme-${theme}`}>
-      {/* Floating/Hidden YouTube Video Canvas */}
-      <div className={`youtube-canvas-overlay ${showVideo ? 'visible' : 'hidden'}`}>
-        <div className="canvas-header">
-          <span>YouTube Video Feed</span>
-          <button className="close-canvas-btn" onClick={() => setShowVideo(false)}>
-            <Minimize2 size={16} />
-          </button>
-        </div>
-        <div className="iframe-wrapper">
-          <div id={playerContainerId}></div>
-        </div>
-      </div>
-
       <div className="player-inner">
-        {/* Track Details */}
-        <div className="player-track-info">
-          {currentTrack ? (
-            <>
-              <div className="player-track-thumb-wrapper">
-                <img 
-                  src={currentTrack.thumbnail || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=80&auto=format&fit=crop&q=60'} 
-                  alt={currentTrack.title}
-                  className={`track-thumb-img ${isPlaying ? 'rotating-disc' : ''}`}
-                />
-                <div className="center-hole"></div>
-              </div>
-              <div className="track-text-details">
-                <h4 className="player-track-title">{currentTrack.title}</h4>
-                <p className="player-track-channel">{currentTrack.channelTitle}</p>
-              </div>
-            </>
-          ) : (
-            <div className="track-text-details">
-              <h4 className="player-track-title">No Track Selected</h4>
-              <p className="player-track-channel">Find a song to start streaming</p>
-            </div>
-          )}
-        </div>
 
         {/* Center Controls: Timeline and Buttons */}
         <div className="player-center-controls">
@@ -343,17 +302,8 @@ export const Player: React.FC<PlayerProps> = ({
           </div>
         </div>
 
-        {/* Right Controls: Volume and Video Feed Toggle */}
+        {/* Right Controls: Volume */}
         <div className="player-right-controls">
-          <button 
-            className={`control-btn right-btn ${showVideo ? 'active-video' : ''}`}
-            onClick={() => setShowVideo(!showVideo)}
-            disabled={!currentTrack}
-            title="Toggle Video Mode"
-          >
-            {showVideo ? <Tv2 size={18} /> : <Tv size={18} />}
-          </button>
-
           <div className="volume-controls">
             <button className="control-btn right-btn" onClick={handleMuteToggle}>
               {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
