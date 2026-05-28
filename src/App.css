@@ -48,10 +48,10 @@
 }
 
 /* Sidebar Navigation Layout */
-.app-sidebar {
+.app-sidebar-left {
   width: 260px;
   height: calc(100vh - 24px);
-  margin: 12px;
+  margin: 12px 0 12px 12px;
   display: flex;
   flex-direction: column;
   padding: 24px 16px;
@@ -59,10 +59,10 @@
   flex-shrink: 0;
   overflow-y: auto;
   gap: 16px;
-  order: 2;
+  order: 1;
 }
 
-.app-sidebar::-webkit-scrollbar {
+.app-sidebar-left::-webkit-scrollbar {
   width: 3px;
 }
 
@@ -129,14 +129,18 @@
 .app-main-panel {
   flex: 1;
   height: calc(100vh - 128px); /* Account for padding + bottom player height */
-  margin: 12px 0 12px 12px;
+  margin: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   z-index: 5;
   overflow-y: auto;
   position: relative;
-  order: 1;
+  order: 2;
+}
+
+.mobile-only-track-info {
+  display: none !important;
 }
 
 /* Page Headers */
@@ -1759,7 +1763,7 @@
   .app-wrapper {
     flex-direction: column-reverse;
   }
-  .app-sidebar {
+  .app-sidebar-left {
     width: calc(100vw - 24px);
     height: auto;
     margin: 12px;
@@ -1834,40 +1838,44 @@
     left: 12px;
     width: auto;
   }
-  .player-track-info-spacer {
-    display: none;
+  .app-sidebar-right {
+    display: none !important;
   }
-  .sidebar-video-container {
-    display: none;
+  .mobile-only-track-info {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 8px;
+    justify-content: center;
   }
   .visualizer-wrapper {
     display: none;
   }
-  .sidebar-now-playing {
-    margin-top: 8px;
-    padding: 8px;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-  }
 }
 
 /* Sidebar Now Playing Preview */
-.sidebar-now-playing {
-  margin-top: 16px;
+.app-sidebar-right {
+  width: 260px;
+  height: calc(100vh - 24px);
+  margin: 12px 12px 12px 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-light);
-  overflow: hidden;
+  padding: 16px;
+  z-index: 5;
+  flex-shrink: 0;
+  overflow-y: auto;
+  gap: 16px;
+  order: 3;
   transition: var(--transition-smooth);
 }
 
-.sidebar-now-playing.hidden {
-  display: none;
+.app-sidebar-right.hidden {
+  display: none !important;
+}
+
+.app-sidebar-right::-webkit-scrollbar {
+  width: 3px;
 }
 
 .sidebar-video-container {
