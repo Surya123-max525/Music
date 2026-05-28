@@ -532,8 +532,9 @@
 .player-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   height: 100%;
+  gap: 40px;
 }
 
 .player-track-info {
@@ -600,7 +601,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  width: 50%;
+  width: 60%;
 }
 
 .playback-buttons {
@@ -715,7 +716,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  width: 25%;
+  width: 250px;
   justify-content: flex-end;
 }
 
@@ -1874,7 +1875,7 @@
 
 .sidebar-video-container {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 1 / 1;
   background: #000;
   border-radius: 8px;
   overflow: hidden;
@@ -1943,19 +1944,20 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 0 !important;
-  height: 0 !important;
-  opacity: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0.01;
   pointer-events: none;
-  visibility: hidden;
+  z-index: 1;
 }
 
 .visible-iframe {
+  position: relative;
   width: 100% !important;
   height: 100% !important;
   border: none;
   opacity: 1;
-  visibility: visible;
+  z-index: 3;
 }
 
 .video-cover-overlay {
@@ -1967,6 +1969,7 @@
   cursor: pointer;
   overflow: hidden;
   border-radius: 8px;
+  z-index: 2;
 }
 
 .video-cover-img {
@@ -2008,5 +2011,198 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* Spotify Right Sidebar Panels */
+.sidebar-artist-card {
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.artist-card-banner {
+  aspect-ratio: 16 / 10;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 12px;
+}
+
+.artist-banner-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.artist-card-body {
+  padding: 16px 12px;
+}
+
+.artist-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.artist-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.verified-badge {
+  background: #3b82f6;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  width: 13px;
+  height: 13px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.follow-btn, .credits-follow-btn {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  border-radius: 20px;
+  color: #fff;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.follow-btn:hover, .credits-follow-btn:hover {
+  border-color: #fff;
+  transform: scale(1.05);
+}
+
+.follow-btn.following, .credits-follow-btn.following {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
+.listeners-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.artist-bio {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.sidebar-credits-card, .sidebar-queue-card {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+}
+
+.credits-header, .queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.credits-header h4, .queue-header h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.credits-show-all, .queue-open-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.credits-show-all:hover, .queue-open-btn:hover {
+  color: #fff;
+}
+
+.credits-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.credits-info h5 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.credits-info p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.queue-track-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: var(--transition-fast);
+}
+
+.queue-track-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.queue-track-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.queue-track-info {
+  overflow: hidden;
+  flex: 1;
+}
+
+.queue-track-info h5 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.queue-track-info p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 
 

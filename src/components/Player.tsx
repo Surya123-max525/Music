@@ -238,8 +238,6 @@ export const Player: React.FC<PlayerProps> = ({
   return (
     <div className={`player-container glass-panel theme-${theme}`}>
       <div className="player-inner">
-        {/* Spacer to keep center controls centered */}
-        <div className="player-track-info-spacer"></div>
 
         {/* Center Controls: Timeline and Buttons */}
         <div className="player-center-controls">

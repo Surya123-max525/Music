@@ -64,6 +64,7 @@ export const App: React.FC = () => {
   const [activeQueue, setActiveQueue] = useState<Track[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
   const [showVideoFeed, setShowVideoFeed] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   // Library / UI state
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>('favorites');
@@ -105,6 +106,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     setShowVideoFeed(false);
+    setIsFollowing(false);
   }, [currentTrack?.id]);
 
   // Sync spaces list to localStorage
@@ -964,6 +966,70 @@ export const App: React.FC = () => {
                 <p className="sidebar-track-channel" title={currentTrack.channelTitle}>{currentTrack.channelTitle}</p>
               </div>
             </div>
+
+            {/* About the Artist card */}
+            <div className="sidebar-artist-card glass-panel">
+              <div className="artist-card-banner" style={{ backgroundImage: `url(${currentTrack.thumbnail})` }}>
+                <span className="artist-banner-title">About the artist</span>
+              </div>
+              <div className="artist-card-body">
+                <div className="artist-card-header">
+                  <h4 className="artist-name">{currentTrack.channelTitle} <span className="verified-badge" title="Verified Artist">✓</span></h4>
+                  <button 
+                    className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                    onClick={() => setIsFollowing(!isFollowing)}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                </div>
+                <p className="listeners-count">{((currentTrack.channelTitle.charCodeAt(0) || 75) * 45863).toLocaleString()} monthly listeners</p>
+                <p className="artist-bio">
+                  Explore high-fidelity streams, official releases, and top hits from {currentTrack.channelTitle} sourced directly via YouTube.
+                </p>
+              </div>
+            </div>
+
+            {/* Credits card */}
+            <div className="sidebar-credits-card glass-panel">
+              <div className="credits-header">
+                <h4>Credits</h4>
+                <button className="credits-show-all">Show all</button>
+              </div>
+              <div className="credits-row">
+                <div className="credits-info">
+                  <h5>{currentTrack.channelTitle}</h5>
+                  <p>Main Artist • Composer • Producer</p>
+                </div>
+                <button 
+                  className={`credits-follow-btn ${isFollowing ? 'following' : ''}`}
+                  onClick={() => setIsFollowing(!isFollowing)}
+                >
+                  {isFollowing ? 'Following' : 'Follow'}
+                </button>
+              </div>
+            </div>
+
+            {/* Next in Queue card */}
+            {queueIndex >= 0 && queueIndex < activeQueue.length - 1 && (
+              (() => {
+                const nextTrack = activeQueue[queueIndex + 1];
+                return (
+                  <div className="sidebar-queue-card glass-panel" onClick={() => playTrack(nextTrack, activeQueue)}>
+                    <div className="queue-header">
+                      <h4>Next in queue</h4>
+                      <button className="queue-open-btn" onClick={(e) => { e.stopPropagation(); setCurrentTab('library'); }}>Open queue</button>
+                    </div>
+                    <div className="queue-track-row">
+                      <img src={nextTrack.thumbnail} alt="" className="queue-track-thumb" />
+                      <div className="queue-track-info">
+                        <h5>{nextTrack.title}</h5>
+                        <p>{nextTrack.channelTitle}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </>
         )}
       </aside>
