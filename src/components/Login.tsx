@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Music, LogIn, ShieldCheck, Info } from 'lucide-react';
+import { Music, LogIn, ShieldCheck, Info, Settings, Save, AlertTriangle } from 'lucide-react';
 import type { UserAccount } from '../types';
 
 declare global {
@@ -12,9 +12,16 @@ interface LoginProps {
   onLogin: (account: UserAccount) => void;
 }
 
+const DEFAULT_CLIENT_ID = '1098654271891-dummyclientid.apps.googleusercontent.com';
+
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [sdkLoading, setSdkLoading] = useState(true);
   const [sdkError, setSdkError] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [clientIdInput, setClientIdInput] = useState(
+    localStorage.getItem('masti_music_google_client_id') || ''
+  );
+  const [isSaved, setIsSaved] = useState(false);
 
   // Helper to parse Google JWT credential payload
   const parseJwt = (token: string) => {
@@ -34,6 +41,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
+  const activeClientId = localStorage.getItem('masti_music_google_client_id') || DEFAULT_CLIENT_ID;
+
   useEffect(() => {
     let checkInterval: number;
     let timeout: number;
@@ -42,9 +51,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (window.google?.accounts?.id) {
         setSdkLoading(false);
         try {
+          // Clear any previous button rendering
+          const btnContainer = document.getElementById('google-signin-btn');
+          if (btnContainer) btnContainer.innerHTML = '';
+
           window.google.accounts.id.initialize({
-            // Dummy client-id. User can paste their own in settings later
-            client_id: '1098654271891-dummyclientid.apps.googleusercontent.com',
+            client_id: activeClientId,
             callback: (response: any) => {
               const decoded = parseJwt(response.credential);
               if (decoded) {
@@ -97,7 +109,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       clearInterval(checkInterval);
       clearTimeout(timeout);
     };
-  }, [onLogin]);
+  }, [onLogin, activeClientId]);
 
   // Fallback sign in for local testing or blocked SDKs
   const handleMockSignIn = () => {
@@ -108,8 +120,23 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     });
   };
 
+  const handleSaveClientId = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanId = clientIdInput.trim();
+    if (cleanId) {
+      localStorage.setItem('masti_music_google_client_id', cleanId);
+    } else {
+      localStorage.removeItem('masti_music_google_client_id');
+    }
+    setIsSaved(true);
+    setTimeout(() => {
+      setIsSaved(false);
+      window.location.reload(); // Reload to re-initialize Google SDK with new client id
+    }, 1000);
+  };
+
   return (
-    <div className="login-overlay">
+    <div className="login-overlay animate-fade-in">
       <div className="login-bg-glows">
         <div className="login-glow glow-primary"></div>
         <div className="login-glow glow-secondary"></div>
@@ -132,22 +159,60 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
           ) : (
             <>
+              {/* Google OAuth Button Container */}
               <div className="google-btn-wrapper">
                 <div id="google-signin-btn"></div>
               </div>
+
+              {activeClientId === DEFAULT_CLIENT_ID && (
+                <div className="google-401-warning" style={{ fontSize: '0.7rem', color: '#fb7185', background: 'rgba(251, 113, 133, 0.05)', border: '1px solid rgba(251, 113, 133, 0.2)', borderRadius: 8, padding: 8, maxWidth: 280, display: 'flex', gap: 6, alignItems: 'flex-start', textAlign: 'left' }}>
+                  <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>The standard Google button uses a dummy Client ID. Clicking it will show an "Authorization Error". Use <strong>Demo Login</strong> below to bypass!</span>
+                </div>
+              )}
 
               <div className="divider-row">
                 <span>or</span>
               </div>
 
-              <button className="sandbox-login-btn glow-btn" onClick={handleMockSignIn}>
+              <button className="sandbox-login-btn glow-btn" onClick={handleMockSignIn} style={{ background: 'var(--theme-color)', color: '#000', fontWeight: 700, border: 'none' }}>
                 <LogIn size={18} /> Demo Developer Login
               </button>
             </>
           )}
         </div>
 
-        <div className="login-footer">
+        {/* Dynamic OAuth Settings Drawer */}
+        <div className="developer-config-panel" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.03)', paddingTop: 12 }}>
+          <button 
+            onClick={() => setShowConfig(!showConfig)} 
+            className="config-toggle-btn"
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <Settings size={12} /> {showConfig ? 'Hide' : 'Show'} Custom Google Client ID Setup
+          </button>
+
+          {showConfig && (
+            <form onSubmit={handleSaveClientId} style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left' }}>
+              <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>OAuth Client ID (from Google Cloud Console):</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input 
+                  type="text" 
+                  placeholder="Paste your client_id.apps.googleusercontent.com"
+                  value={clientIdInput}
+                  onChange={(e) => setClientIdInput(e.target.value)}
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: 6, color: '#fff', padding: '6px 10px', fontSize: '0.75rem', flex: 1 }}
+                />
+                <button type="submit" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-light)', borderRadius: 6, color: '#fff', padding: '0 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                  <Save size={14} />
+                </button>
+              </div>
+              {isSaved && <span style={{ fontSize: '0.7rem', color: '#34d399' }}>✓ Saved! Reloading auth...</span>}
+            </form>
+          )}
+        </div>
+
+        <div className="login-footer" style={{ marginTop: 0 }}>
           <div className="security-notice">
             <ShieldCheck size={14} className="icon-emerald" />
             <span>Secure, serverless client-side authentication.</span>
