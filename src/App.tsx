@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   Home as HomeIcon, 
   Search as SearchIcon, 
@@ -17,7 +17,9 @@ import {
   Bluetooth,
   Laptop,
   Smartphone,
-  Speaker
+  Speaker,
+  LayoutGrid,
+  Radio as RadioIcon
 } from 'lucide-react';
 import type { Track, Playlist, Space, UserPreferences, UserAccount, ConnectedDevice } from './types';
 import { Onboarding } from './components/Onboarding';
@@ -28,7 +30,33 @@ import { PlaylistImporter } from './components/PlaylistImporter';
 import { ProfileAbout } from './components/ProfileAbout';
 import { Downloads } from './components/Downloads';
 import { Login } from './components/Login';
-import { searchYouTube, getSuggestions } from './utils/youtube';
+
+const POPULAR_SEARCH_SUGGESTIONS = [
+  'Arijit Singh', 'Alan Walker', 'Adele', 'Atif Aslam', 'Anirudh Ravichander', 'Akcent', 'Avicii', 'Alka Yagnik',
+  'Billie Eilish', 'Bruno Mars', 'Badshah', 'Bibi', 'Beyonce', 'Blackpink', 'BTS',
+  'Coldplay', 'Charlie Puth', 'Camila Cabello', 'Coke Studio', 'Cardi B',
+  'Drake', 'Dua Lipa', 'Diljit Dosanjh', 'David Guetta', 'Daddy Yankee',
+  'Ed Sheeran', 'Eminem', 'Enrique Iglesias', 'Ellie Goulding',
+  'Frank Ocean', 'Future', 'Falguni Pathak',
+  'Guns N\' Roses', 'Gaurav Dutt', 'Garry Sandhu', 'Guru Randhawa',
+  'Harry Styles', 'Halsey', 'Himesh Reshammiya', 'Hardwell',
+  'Imagine Dragons', 'Iskandar', 'Illenium', 'IU',
+  'Justin Bieber', 'Jubin Nautiyal', 'Joji', 'J Balvin', 'John Legend',
+  'Kishore Kumar', 'Katy Perry', 'KK', 'Kumar Sanu', 'Kygo', 'Khalid', 'Kanye West',
+  'Lata Mangeshkar', 'Linkin Park', 'Lofi Beats', 'Lana Del Rey', 'Lady Gaga', 'Lil Nas X',
+  'Maroon 5', 'Marshmello', 'Martin Garrix', 'Michael Jackson', 'Mithoon', 'Neha Kakkar',
+  'One Direction', 'Olivia Rodrigo', 'OneRepublic', 'Oasis',
+  'Post Malone', 'Pritam', 'Prateek Kuhad', 'Pitbull', 'Pink Floyd',
+  'Rihanna', 'Rafi', 'Rahat Fateh Ali Khan', 'Ritviz', 'Rema',
+  'Sidhu Moose Wala', 'Shreya Ghoshal', 'Selena Gomez', 'Shawn Mendes', 'Sia', 'Shakira', 'Sonu Nigam',
+  'Taylor Swift', 'The Weeknd', 'Travis Scott', 'Tanishk Bagchi', 'Twenty One Pilots',
+  'Udit Narayan', 'Usher', 'U2',
+  'Vance Joy', 'Vishal-Shekhar', 'Vikas',
+  'Wiz Khalifa', 'Wu-Tang Clan',
+  'Yo Yo Honey Singh', 'Yaseen', 'Yanni',
+  'Zayn Malik', 'Zara Larsson'
+];
+import { searchYouTube, getSuggestions, getApiKey } from './utils/youtube';
 import './App.css';
 
 // Default mock initial spaces setup
@@ -42,6 +70,45 @@ const DEFAULT_SPACES: Space[] = [
     playlists: [],
     history: [],
     preferences: null
+  }
+];
+
+const LIVE_RADIO_STATIONS: Track[] = [
+  {
+    id: 'jfKfPfyJRdk', // Lofi Girl Live
+    title: 'Lofi Hip Hop Radio - Beats to Relax/Study to',
+    channelTitle: 'Lofi Girl',
+    thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/mqdefault.jpg'
+  },
+  {
+    id: '4xDzrJKXOOY', // Synthwave Radio Live
+    title: 'Synthwave Radio - Chill synth / retro beats',
+    channelTitle: 'Lofi Girl Synthwave',
+    thumbnail: 'https://img.youtube.com/vi/4xDzrJKXOOY/mqdefault.jpg'
+  },
+  {
+    id: '5yx6BWbL1E4', // Chillhop Live
+    title: 'Chillhop Radio - Jazzy & Lofi Hip Hop Beats',
+    channelTitle: 'Chillhop Music',
+    thumbnail: 'https://img.youtube.com/vi/5yx6BWbL1E4/mqdefault.jpg'
+  },
+  {
+    id: 'DWcJFNfaw9c', // Coffee Shop Jazz Live
+    title: 'Cafe Music - Cozy Coffee Shop Jazz & Bossa Nova',
+    channelTitle: 'Cafe Music BGM channel',
+    thumbnail: 'https://img.youtube.com/vi/DWcJFNfaw9c/mqdefault.jpg'
+  },
+  {
+    id: 'qd7K_zV25p8', // Pop Music Live
+    title: 'Hits Radio Live - Today\'s Best Pop Hits',
+    channelTitle: 'Pop Hits Radio',
+    thumbnail: 'https://img.youtube.com/vi/qd7K_zV25p8/mqdefault.jpg'
+  },
+  {
+    id: 'rPjez8z6kJc', // Deep House Live
+    title: 'Deep House Radio - 24/7 Chill House & Dance Music',
+    channelTitle: 'Selected.',
+    thumbnail: 'https://img.youtube.com/vi/rPjez8z6kJc/mqdefault.jpg'
   }
 ];
 
@@ -92,8 +159,8 @@ const getLyricsForTrack = (track: { title: string; channelTitle: string }) => {
 };
 
 export const App: React.FC = () => {
-  // Navigation Tabs: 'home' | 'search' | 'library' | 'profile' | 'downloads'
-  const [currentTab, setCurrentTab] = useState<'home' | 'search' | 'library' | 'profile' | 'downloads'>('home');
+  // Navigation Tabs: 'home' | 'new' | 'radio' | 'library' | 'search' | 'profile' | 'downloads'
+  const [currentTab, setCurrentTab] = useState<'home' | 'new' | 'radio' | 'library' | 'search' | 'profile' | 'downloads'>('home');
   const [activeSpaceId, setActiveSpaceId] = useState<string>('personal');
   const [spaces, setSpaces] = useState<Space[]>(DEFAULT_SPACES);
   const [userAccount, setUserAccount] = useState<UserAccount | null>(null);
@@ -103,10 +170,18 @@ export const App: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Track[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchTriggered, setSearchTriggered] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Recommendations state
   const [suggestions, setSuggestions] = useState<Track[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+
+  // New & Radio states
+  const [newReleases, setNewReleases] = useState<Track[]>([]);
+  const [newReleasesLoading, setNewReleasesLoading] = useState(false);
+  const [liveRadios, setLiveRadios] = useState<Track[]>([]);
+  const [liveRadiosLoading, setLiveRadiosLoading] = useState(false);
 
   // Audio Playback Queue states
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -121,6 +196,18 @@ export const App: React.FC = () => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showMiniplayer, setShowMiniplayer] = useState(false);
   const [showDeviceSelector, setShowDeviceSelector] = useState(false);
+  const [skipSilence, setSkipSilence] = useState<boolean>(() => {
+    const saved = localStorage.getItem('masti_music_skip_silence');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const handleToggleSkipSilence = useCallback(() => {
+    setSkipSilence((prev) => {
+      const next = !prev;
+      localStorage.setItem('masti_music_skip_silence', String(next));
+      return next;
+    });
+  }, []);
 
   // Device Selection & Bluetooth states
   const [devices, setDevices] = useState<ConnectedDevice[]>([
@@ -183,18 +270,18 @@ export const App: React.FC = () => {
     localStorage.setItem('masti_music_spaces', JSON.stringify(updatedSpaces));
   };
 
-  const handleLogin = (account: UserAccount) => {
+  const handleLogin = useCallback((account: UserAccount) => {
     setUserAccount(account);
     localStorage.setItem('masti_music_user', JSON.stringify(account));
     setCurrentTab('home');
-  };
+  }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setUserAccount(null);
     localStorage.removeItem('masti_music_user');
     setIsPlaying(false);
     setCurrentTrack(null);
-  };
+  }, []);
 
   const currentSpace = spaces.find((s) => s.id === activeSpaceId) || spaces[0];
 
@@ -221,6 +308,35 @@ export const App: React.FC = () => {
 
     fetchRecommendations();
   }, [activeSpaceId, currentSpace.preferences]);
+
+  // Fetch New Releases
+  useEffect(() => {
+    if (currentTab === 'new' && newReleases.length === 0) {
+      setNewReleasesLoading(true);
+      searchYouTube('new release hit music songs')
+        .then((results) => {
+          setNewReleases(results);
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setNewReleasesLoading(false));
+    }
+  }, [currentTab, newReleases.length]);
+
+  // Fetch Live Radio Streams
+  useEffect(() => {
+    if (currentTab === 'radio' && liveRadios.length === 0) {
+      setLiveRadiosLoading(true);
+      searchYouTube('lofi hip hop live radio')
+        .then((results) => {
+          setLiveRadios(results.length > 0 ? results : LIVE_RADIO_STATIONS);
+        })
+        .catch((err) => {
+          console.error(err);
+          setLiveRadios(LIVE_RADIO_STATIONS);
+        })
+        .finally(() => setLiveRadiosLoading(false));
+    }
+  }, [currentTab, liveRadios.length]);
 
   // Space management
   const selectSpace = (spaceId: string) => {
@@ -465,12 +581,6 @@ export const App: React.FC = () => {
   const handleNext = () => {
     if (activeQueue.length === 0) return;
 
-    if (repeatMode === 'one' && currentTrack) {
-      // Just replay current song
-      playTrack(currentTrack, activeQueue);
-      return;
-    }
-
     let nextIdx = queueIndex + 1;
     if (shuffleMode) {
       nextIdx = Math.floor(Math.random() * activeQueue.length);
@@ -518,14 +628,13 @@ export const App: React.FC = () => {
   };
 
   // Searching youtube
-  const handleSearchSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!queryClean(searchQuery)) return;
+  const triggerSearch = async (queryText: string) => {
+    if (!queryClean(queryText)) return;
 
     setSearchLoading(true);
     setSearchTriggered(true);
     try {
-      const results = await searchYouTube(searchQuery);
+      const results = await searchYouTube(queryText);
       setSearchResults(results);
     } catch (err) {
       console.error(err);
@@ -533,6 +642,89 @@ export const App: React.FC = () => {
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  const handleSearchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    triggerSearch(searchQuery);
+  };
+
+  const handleSearchQueryChange = async (val: string) => {
+    setSearchQuery(val);
+    if (!val.trim()) {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    const trimmed = val.trim();
+    const firstLetter = trimmed.charAt(0).toLowerCase();
+
+    // 1. Try to fetch from YouTube complete search suggestions API via JSONP to avoid CORS block
+    try {
+      const callbackName = `ytSuggest_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      const script = document.createElement('script');
+      
+      const suggestionsPromise = new Promise<string[]>((resolve, reject) => {
+        (window as any)[callbackName] = (data: any) => {
+          cleanup();
+          if (data && Array.isArray(data[1])) {
+            const parsed = data[1]
+              .map((item: any) => {
+                if (typeof item === 'string') return item;
+                if (Array.isArray(item) && typeof item[0] === 'string') return item[0];
+                return null;
+              })
+              .filter((item: any): item is string => item !== null);
+            resolve(parsed.slice(0, 6));
+          } else {
+            resolve([]);
+          }
+        };
+
+        const cleanup = () => {
+          delete (window as any)[callbackName];
+          script.remove();
+        };
+
+        script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(trimmed)}&callback=${callbackName}`;
+        script.onerror = () => {
+          cleanup();
+          reject(new Error('JSONP failed'));
+        };
+        document.body.appendChild(script);
+      });
+
+      const results = await suggestionsPromise;
+      if (results && results.length > 0) {
+        setSearchSuggestions(results);
+        return;
+      }
+    } catch (e) {
+      console.warn('YouTube suggestion JSONP failed, using local fallback', e);
+    }
+
+    // 2. Local fuzzy fallback
+    const directMatches = POPULAR_SEARCH_SUGGESTIONS.filter(item => 
+      item.toLowerCase().includes(trimmed.toLowerCase())
+    );
+
+    const fuzzyMatches = POPULAR_SEARCH_SUGGESTIONS.filter(item => {
+      const itemLower = item.toLowerCase();
+      if (itemLower.charAt(0) !== firstLetter) return false;
+      let matchCount = 0;
+      const itemChars = itemLower.split('');
+      for (const char of trimmed.toLowerCase()) {
+        const idx = itemChars.indexOf(char);
+        if (idx !== -1) {
+          matchCount++;
+          itemChars.splice(idx, 1);
+        }
+      }
+      return matchCount >= trimmed.length * 0.5;
+    });
+
+    const combined = Array.from(new Set([...directMatches, ...fuzzyMatches]));
+    setSearchSuggestions(combined.slice(0, 6));
   };
 
   const queryClean = (q: string) => q.trim().length > 0;
@@ -662,6 +854,34 @@ export const App: React.FC = () => {
         <Onboarding onComplete={updatePreferences} />
       )}
 
+      {/* Mobile Top Header */}
+      <header className="mobile-top-header">
+        <div className="mobile-header-brand">
+          <Music className="brand-icon" size={20} />
+          <span>masti music</span>
+        </div>
+        <div className="mobile-header-right">
+          {/* Active Space Display */}
+          <div className="mobile-space-badge" onClick={() => setCurrentTab('profile')}>
+            <span className="mobile-space-badge-name">{currentSpace.name}</span>
+          </div>
+          {/* User Profile Avatar */}
+          <button 
+            className={`mobile-profile-btn ${currentTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('profile')}
+            title="Profile & Settings"
+          >
+            {userAccount?.picture ? (
+              <img src={userAccount.picture} alt={userAccount.name} className="mobile-profile-img" />
+            ) : (
+              <div className="mobile-profile-placeholder">
+                {userAccount?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            )}
+          </button>
+        </div>
+      </header>
+
       {/* Left Sidebar navigation */}
       <aside className="app-sidebar-left glass-panel">
         <div className="sidebar-brand">
@@ -688,11 +908,18 @@ export const App: React.FC = () => {
             <span>Home</span>
           </button>
           <button 
-            className={`nav-item-btn ${currentTab === 'search' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('search')}
+            className={`nav-item-btn ${currentTab === 'new' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('new')}
           >
-            <SearchIcon size={18} />
-            <span>Search</span>
+            <LayoutGrid size={18} />
+            <span>New</span>
+          </button>
+          <button 
+            className={`nav-item-btn ${currentTab === 'radio' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('radio')}
+          >
+            <RadioIcon size={18} />
+            <span>Radio</span>
           </button>
           <button 
             className={`nav-item-btn ${currentTab === 'library' ? 'active' : ''}`}
@@ -702,11 +929,18 @@ export const App: React.FC = () => {
             <span>Library</span>
           </button>
           <button 
-            className={`nav-item-btn ${currentTab === 'profile' ? 'active' : ''}`}
+            className={`nav-item-btn ${currentTab === 'search' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('search')}
+          >
+            <SearchIcon size={18} />
+            <span>Search</span>
+          </button>
+          <button 
+            className={`nav-item-btn profile-nav-btn ${currentTab === 'profile' ? 'active' : ''}`}
             onClick={() => setCurrentTab('profile')}
           >
             <UserIcon size={18} />
-            <span>Profile & About</span>
+            <span>Profile</span>
           </button>
           <button 
             className={`nav-item-btn ${currentTab === 'downloads' ? 'active' : ''}`}
@@ -743,6 +977,18 @@ export const App: React.FC = () => {
           </div>
         ) : (
           <>
+            {currentTab === 'home' && (
+              <div className="mobile-space-selector-wrapper animate-fade-in">
+                <SpaceSelector
+                  currentSpace={currentSpace}
+                  spaces={spaces}
+                  onSelectSpace={selectSpace}
+                  onCreateSpace={createSpace}
+                  onDeleteSpace={deleteSpace}
+                />
+              </div>
+            )}
+
             {currentTab === 'home' && (
           <div className="home-tab-content">
             <div className="page-header">
@@ -878,6 +1124,108 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {currentTab === 'new' && (
+          <div className="new-tab-content animate-fade-in">
+            <div className="page-header">
+              <h1>New Releases</h1>
+              <div className="tagline-spark"><Sparkles size={16} /> Latest music hits</div>
+            </div>
+
+            <div className="new-releases-section">
+              {newReleasesLoading ? (
+                <div className="suggestions-loading-spinner" style={{ padding: '60px 0', textAlign: 'center' }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
+                  <p style={{ color: 'var(--text-muted)' }}>Fetching new releases...</p>
+                </div>
+              ) : newReleases.length > 0 ? (
+                <div className="suggestions-grid">
+                  {newReleases.map((track) => {
+                    const isFav = currentSpace.favorites.some((t) => t.id === track.id);
+                    return (
+                      <div key={`new-${track.id}`} className="song-card glass-panel" onClick={() => playTrack(track, newReleases)}>
+                        <div className="song-card-thumbnail-wrapper">
+                          <img src={track.thumbnail} alt={track.title} className="song-card-thumbnail" />
+                          <div className="song-card-play-overlay">
+                            <div className="play-circle-btn"><Play size={20} fill="currentColor" /></div>
+                          </div>
+                        </div>
+                        <button 
+                          className={`favorite-card-btn ${isFav ? 'favorited' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(track);
+                          }}
+                        >
+                          <Heart size={16} fill={isFav ? 'currentColor' : 'none'} />
+                        </button>
+                        <div className="song-card-info">
+                          <h5>{track.title}</h5>
+                          <p>{track.channelTitle}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                  <p>Unable to load new releases. Please verify your connection.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {currentTab === 'radio' && (
+          <div className="radio-tab-content animate-fade-in">
+            <div className="page-header">
+              <h1>Live Radio Stations</h1>
+              <div className="tagline-spark"><Sparkles size={16} /> Stream 24/7 live beats</div>
+            </div>
+
+            <div className="live-radio-section">
+              {liveRadiosLoading ? (
+                <div className="suggestions-loading-spinner" style={{ padding: '60px 0', textAlign: 'center' }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
+                  <p style={{ color: 'var(--text-muted)' }}>Loading live radio feeds...</p>
+                </div>
+              ) : liveRadios.length > 0 ? (
+                <div className="suggestions-grid">
+                  {liveRadios.map((track) => {
+                    const isFav = currentSpace.favorites.some((t) => t.id === track.id);
+                    return (
+                      <div key={`radio-${track.id}`} className="song-card glass-panel" onClick={() => playTrack(track, liveRadios)}>
+                        <div className="song-card-thumbnail-wrapper">
+                          <img src={track.thumbnail} alt={track.title} className="song-card-thumbnail" />
+                          <div className="song-card-play-overlay">
+                            <div className="play-circle-btn"><Play size={20} fill="currentColor" /></div>
+                          </div>
+                        </div>
+                        <button 
+                          className={`favorite-card-btn ${isFav ? 'favorited' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(track);
+                          }}
+                        >
+                          <Heart size={16} fill={isFav ? 'currentColor' : 'none'} />
+                        </button>
+                        <div className="song-card-info">
+                          <h5>{track.title}</h5>
+                          <p>{track.channelTitle} • LIVE</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                  <p>Unable to load radio channels.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {currentTab === 'search' && (
           <div className="search-tab-content">
             <div className="page-header">
@@ -892,8 +1240,30 @@ export const App: React.FC = () => {
                   className="search-input"
                   placeholder="Artists, songs, albums..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchQueryChange(e.target.value)}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 />
+                
+                {showSuggestions && searchSuggestions.length > 0 && (
+                  <div className="search-suggestions-popover glass-panel animate-fade-in">
+                    {searchSuggestions.map((suggestion, idx) => (
+                      <div 
+                        key={idx} 
+                        className="suggestion-item"
+                        onMouseDown={() => {
+                          setSearchQuery(suggestion);
+                          setSearchSuggestions([]);
+                          setShowSuggestions(false);
+                          triggerSearch(suggestion);
+                        }}
+                      >
+                        <SearchIcon size={14} className="suggestion-icon" />
+                        <span>{suggestion}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <button type="submit" className="search-submit-btn">
                 Search
@@ -994,10 +1364,13 @@ export const App: React.FC = () => {
                     </button>
                     
                     {currentSpace.playlists.map((playlist) => (
-                      <button 
+                      <div 
                         key={playlist.id}
                         className={`playlist-nav-item ${selectedPlaylistId === playlist.id ? 'active' : ''}`}
                         onClick={() => setSelectedPlaylistId(playlist.id)}
+                        role="button"
+                        tabIndex={0}
+                        style={{ cursor: 'pointer' }}
                       >
                         <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><LibraryIcon size={16} /> {playlist.name}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1014,13 +1387,13 @@ export const App: React.FC = () => {
                             <Trash2 size={12} />
                           </button>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Playlist Importer component */}
-                <PlaylistImporter onImport={handlePlaylistImport} apiKey={localStorage.getItem('yt_music_api_key') || ''} />
+                <PlaylistImporter onImport={handlePlaylistImport} apiKey={getApiKey()} />
               </div>
 
               {/* Playlist contents panel */}
@@ -1148,7 +1521,7 @@ export const App: React.FC = () => {
       {/* Right Sidebar - Now Playing Preview (always mounted to prevent YT Player API crashes) */}
       <aside className={`app-sidebar-right glass-panel ${currentTrack ? 'visible' : 'hidden'}`}>
         {/* The video container must always be rendered in the DOM so YT Player can initialize */}
-        <div className="sidebar-video-container" style={{ display: currentTrack ? 'block' : 'none' }}>
+        <div className="sidebar-video-container">
           {/* Always mounted YT player iframe wrapper to preserve video playing state */}
           <div className={showVideoFeed ? 'visible-iframe-wrapper' : 'hidden-iframe-wrapper'}>
             <YoutubePlayerContainer />
@@ -1296,6 +1669,11 @@ export const App: React.FC = () => {
         onShuffleModeChange={setShuffleMode}
         theme={currentSpace.theme}
         onTrackEnd={handleNext}
+        currentSpace={currentSpace}
+        spaces={spaces}
+        onSelectSpace={selectSpace}
+        onCreateSpace={createSpace}
+        onDeleteSpace={deleteSpace}
         onTrackStart={(track) => {
           // If this was a search-on-demand track that needs search, handle search in parent
           if (track.id.startsWith('search-demand-')) {
@@ -1328,6 +1706,8 @@ export const App: React.FC = () => {
           setShowLyrics(false);
           setShowMiniplayer(false);
         }}
+        skipSilence={skipSilence}
+        onToggleSkipSilence={handleToggleSkipSilence}
       />
 
       {/* Device Selector Popup Card */}

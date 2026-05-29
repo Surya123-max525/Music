@@ -12,9 +12,13 @@ import {
   ListMusic,
   MonitorPlay,
   AppWindow,
-  Maximize2
+  Maximize2,
+  Zap,
+  FastForward
 } from 'lucide-react';
 import type { Track, Space } from '../types';
+import { SpaceSelector } from './SpaceSelector';
+import { Visualizer } from './Visualizer';
 
 interface PlayerProps {
   currentTrack: Track | null;
@@ -40,6 +44,13 @@ interface PlayerProps {
   onMiniplayerToggle: () => void;
   showDeviceSelector: boolean;
   onDeviceSelectorToggle: () => void;
+  skipSilence: boolean;
+  onToggleSkipSilence: () => void;
+  currentSpace: Space;
+  spaces: Space[];
+  onSelectSpace: (spaceId: string) => void;
+  onCreateSpace: (name: string, icon: string, theme: Space['theme']) => void;
+  onDeleteSpace: (spaceId: string) => void;
 }
 
 declare global {
@@ -72,6 +83,13 @@ export const Player: React.FC<PlayerProps> = ({
   onMiniplayerToggle,
   showDeviceSelector,
   onDeviceSelectorToggle,
+  skipSilence,
+  onToggleSkipSilence,
+  currentSpace,
+  spaces,
+  onSelectSpace,
+  onCreateSpace,
+  onDeleteSpace,
 }) => {
   const [player, setPlayer] = useState<any>(null);
   const [isApiReady, setIsApiReady] = useState(false);
@@ -79,8 +97,27 @@ export const Player: React.FC<PlayerProps> = ({
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(volume);
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const timelineIntervalRef = useRef<number | null>(null);
   const playerContainerId = 'youtube-player-iframe';
+  const loadedVideoIdRef = useRef<string | null>(null);
+  const isTransitioningRef = useRef<boolean>(false);
+
+  const repeatModeRef = useRef(repeatMode);
+  const skipSilenceRef = useRef(skipSilence);
+  const onTrackEndRef = useRef(onTrackEnd);
+
+  useEffect(() => {
+    repeatModeRef.current = repeatMode;
+  }, [repeatMode]);
+
+  useEffect(() => {
+    skipSilenceRef.current = skipSilence;
+  }, [skipSilence]);
+
+  useEffect(() => {
+    onTrackEndRef.current = onTrackEnd;
+  }, [onTrackEnd]);
 
   // Load YouTube Iframe API
   useEffect(() => {
@@ -131,13 +168,24 @@ export const Player: React.FC<PlayerProps> = ({
             // Player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
             const state = event.data;
             if (state === 1) {
+              isTransitioningRef.current = false;
               onPlayPause(true);
               setDuration(event.target.getDuration());
             } else if (state === 2) {
-              onPlayPause(false);
+              // Ignore pause events while loading/transitioning a track
+              if (!isTransitioningRef.current) {
+                onPlayPause(false);
+              }
             } else if (state === 0) {
-              onPlayPause(false);
-              onTrackEnd();
+              isTransitioningRef.current = false;
+              if (repeatModeRef.current === 'one') {
+                event.target.seekTo(0, true);
+                event.target.playVideo();
+                onPlayPause(true);
+              } else {
+                onPlayPause(false);
+                onTrackEndRef.current();
+              }
             }
           }
         }
@@ -149,7 +197,12 @@ export const Player: React.FC<PlayerProps> = ({
 
   // Load / Play new track when currentTrack changes
   useEffect(() => {
-    if (!player || !currentTrack) return;
+    if (!player || !currentTrack) {
+      if (!currentTrack) {
+        loadedVideoIdRef.current = null;
+      }
+      return;
+    }
 
     // Check if the track starts with the special search-on-demand keyword
     if (currentTrack.id.startsWith('search-demand-')) {
@@ -158,14 +211,22 @@ export const Player: React.FC<PlayerProps> = ({
       return;
     }
 
+    // Prevent reloading the same video if it's already loaded/loading
+    if (loadedVideoIdRef.current === currentTrack.id) {
+      return;
+    }
+
     try {
+      isTransitioningRef.current = true;
       player.loadVideoById(currentTrack.id);
+      loadedVideoIdRef.current = currentTrack.id;
       onPlayPause(true);
       setCurrentTime(0);
       setDuration(0);
       onTrackStart(currentTrack);
     } catch (e) {
       console.error('Failed to load YouTube video:', e);
+      isTransitioningRef.current = false;
     }
   }, [currentTrack, player]);
 
@@ -174,10 +235,16 @@ export const Player: React.FC<PlayerProps> = ({
     if (!player) return;
     try {
       const playerState = player.getPlayerState?.();
-      if (isPlaying && playerState !== 1) {
-        player.playVideo();
-      } else if (!isPlaying && playerState === 1) {
-        player.pauseVideo();
+      if (isPlaying) {
+        // Only trigger play if not already playing and not buffering
+        if (playerState !== 1 && playerState !== 3) {
+          player.playVideo();
+        }
+      } else {
+        // Only trigger pause if currently playing or buffering
+        if (playerState === 1 || playerState === 3) {
+          player.pauseVideo();
+        }
       }
     } catch (e) {
       console.warn('Player play state syncing error:', e);
@@ -203,14 +270,28 @@ export const Player: React.FC<PlayerProps> = ({
     if (isPlaying && player) {
       timelineIntervalRef.current = window.setInterval(() => {
         try {
-          if (player.getCurrentTime) {
-            const time = player.getCurrentTime();
+          if (player.getCurrentTime && player.getDuration) {
+            const rawTime = player.getCurrentTime();
+            const rawDur = player.getDuration();
+            const time = typeof rawTime === 'number' && !isNaN(rawTime) ? rawTime : 0;
+            const dur = typeof rawDur === 'number' && !isNaN(rawDur) ? rawDur : 0;
             setCurrentTime(time);
-          }
-          if (player.getDuration) {
-            const dur = player.getDuration();
             if (dur > 0) {
               setDuration(dur);
+              
+              // Skip silence: if within 3 seconds of the end of a song, trigger end early
+              if (skipSilenceRef.current && time >= dur - 3 && dur > 10 && !isTransitioningRef.current) {
+                isTransitioningRef.current = true;
+                if (repeatModeRef.current === 'one') {
+                  player.seekTo(0, true);
+                  player.playVideo();
+                  setTimeout(() => {
+                    isTransitioningRef.current = false;
+                  }, 1000);
+                } else {
+                  onTrackEndRef.current();
+                }
+              }
             }
           }
         } catch (e) {
@@ -276,17 +357,23 @@ export const Player: React.FC<PlayerProps> = ({
   };
 
   return (
-    <div className={`player-container glass-panel theme-${theme}`}>
+    <div className={`player-container glass-panel theme-${theme} ${isMobileExpanded ? 'is-expanded' : ''} ${currentTrack ? 'has-track' : ''}`}>
+      {isMobileExpanded && (
+        <div className="player-mobile-collapse-bar" onClick={() => setIsMobileExpanded(false)}>
+          <div className="collapse-indicator"></div>
+        </div>
+      )}
       <div className="player-inner">
         {/* Left Side: Cover Art, Title, Artist, and Verified Checkmark */}
         {currentTrack ? (
-          <div className="player-left-controls">
+          <div className="player-left-controls" onClick={() => setIsMobileExpanded(!isMobileExpanded)}>
             <div className="player-track-thumb-wrapper">
               <img src={currentTrack.thumbnail} alt="" className="track-thumb-img" />
             </div>
             <div className="player-track-info">
               <h4 className="player-track-title" title={currentTrack.title}>
                 {currentTrack.title}
+                <span className="explicit-badge">E</span>
               </h4>
               <p className="player-track-channel" title={currentTrack.channelTitle}>
                 {currentTrack.channelTitle}
@@ -296,6 +383,54 @@ export const Player: React.FC<PlayerProps> = ({
           </div>
         ) : (
           <div className="player-left-controls"></div>
+        )}
+
+        {/* Mobile Mini Player Actions (Only visible on mobile when not expanded) */}
+        {currentTrack && (
+          <div className="player-mobile-mini-actions">
+            <button 
+              className={`mini-action-btn ${showLyrics ? 'active-opt' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onLyricsToggle();
+              }}
+              title="Lyrics"
+              style={{ color: showLyrics ? '#fa233c' : 'rgba(255,255,255,0.7)' }}
+            >
+              <Mic size={18} />
+            </button>
+            <button 
+              className={`mini-action-btn ${showQueue ? 'active-opt' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQueueToggle();
+              }}
+              title="Queue"
+              style={{ color: showQueue ? '#fa233c' : 'rgba(255,255,255,0.7)' }}
+            >
+              <ListMusic size={18} />
+            </button>
+            <button 
+              className="mini-action-btn play-pause-btn" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onPlayPause(!isPlaying);
+              }}
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />}
+            </button>
+            <button 
+              className="mini-action-btn next-btn" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onNext();
+              }}
+              title="Next"
+            >
+              <FastForward size={20} fill="currentColor" color="currentColor" />
+            </button>
+          </div>
         )}
 
         {/* Center Controls: Timeline and Buttons */}
@@ -353,9 +488,12 @@ export const Player: React.FC<PlayerProps> = ({
               className="timeline-slider"
               min={0}
               max={duration || 100}
-              value={currentTime}
+              value={currentTime || 0}
               onChange={handleSeek}
               disabled={!currentTrack}
+              style={{
+                background: `linear-gradient(to right, #00d2ff 0%, #0066ff ${duration > 0 ? (currentTime / duration) * 100 : 0}%, rgba(255, 255, 255, 0.1) ${duration > 0 ? (currentTime / duration) * 100 : 0}%, rgba(255, 255, 255, 0.1) 100%)`
+              }}
             />
             <span className="time-text">{formatTime(duration)}</span>
           </div>
@@ -365,7 +503,10 @@ export const Player: React.FC<PlayerProps> = ({
         <div className="player-right-controls">
           <button 
             className={`control-btn right-btn ${showLyrics ? 'active-opt' : ''}`}
-            onClick={onLyricsToggle}
+            onClick={() => {
+              onLyricsToggle();
+              setIsMobileExpanded(false);
+            }}
             title="Lyrics"
           >
             <Mic size={18} />
@@ -373,7 +514,10 @@ export const Player: React.FC<PlayerProps> = ({
           
           <button 
             className={`control-btn right-btn ${showQueue ? 'active-opt' : ''}`}
-            onClick={onQueueToggle}
+            onClick={() => {
+              onQueueToggle();
+              setIsMobileExpanded(false);
+            }}
             title="Queue"
           >
             <ListMusic size={18} />
@@ -381,10 +525,21 @@ export const Player: React.FC<PlayerProps> = ({
           
           <button 
             className={`control-btn right-btn ${showDeviceSelector ? 'active-opt' : ''}`}
-            onClick={onDeviceSelectorToggle}
+            onClick={() => {
+              onDeviceSelectorToggle();
+              setIsMobileExpanded(false);
+            }}
             title="Connect to a device"
           >
             <MonitorPlay size={18} />
+          </button>
+
+          <button 
+            className={`control-btn right-btn ${skipSilence ? 'active-opt' : ''}`}
+            onClick={onToggleSkipSilence}
+            title={skipSilence ? "Skip Silence (Active)" : "Skip Silence (Inactive)"}
+          >
+            <Zap size={18} fill={skipSilence ? "currentColor" : "none"} />
           </button>
 
           <div className="volume-controls">
@@ -396,14 +551,20 @@ export const Player: React.FC<PlayerProps> = ({
               className="volume-slider"
               min={0}
               max={100}
-              value={isMuted ? 0 : volume}
+              value={isMuted ? 0 : (volume || 0)}
               onChange={handleVolumeSlider}
+              style={{
+                background: `linear-gradient(to right, #00d2ff 0%, #0066ff ${isMuted ? 0 : (volume || 0)}%, rgba(255, 255, 255, 0.1) ${isMuted ? 0 : (volume || 0)}%, rgba(255, 255, 255, 0.1) 100%)`
+              }}
             />
           </div>
 
           <button 
             className={`control-btn right-btn ${showMiniplayer ? 'active-opt' : ''}`}
-            onClick={onMiniplayerToggle}
+            onClick={() => {
+              onMiniplayerToggle();
+              setIsMobileExpanded(false);
+            }}
             title="Miniplayer"
           >
             <AppWindow size={18} />
@@ -418,6 +579,30 @@ export const Player: React.FC<PlayerProps> = ({
           </button>
         </div>
       </div>
+
+      {isMobileExpanded && (
+        <div className="player-mobile-expanded-extras animate-fade-in">
+          {/* Active Space Selector */}
+          <div className="expanded-extra-section">
+            <h5 className="expanded-section-title">Active Space Manager</h5>
+            <SpaceSelector
+              currentSpace={currentSpace}
+              spaces={spaces}
+              onSelectSpace={onSelectSpace}
+              onCreateSpace={onCreateSpace}
+              onDeleteSpace={onDeleteSpace}
+            />
+          </div>
+
+          {/* Audio Visualizer */}
+          <div className="expanded-extra-section animate-fade-in">
+            <h5 className="expanded-section-title">Audio Visualizer</h5>
+            <div className="mobile-expanded-visualizer-container">
+              <Visualizer isPlaying={isPlaying} theme={theme} volume={volume} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

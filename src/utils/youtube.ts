@@ -1,10 +1,13 @@
 import type { Track } from '../types';
 
-export const DEFAULT_API_KEY = 'AIzaSyCuHboaVwoiAI75nERPSL7PaXCJMBWEyu4';
+export const DEFAULT_API_KEY = 'AIzaSyAM8zghSU60PtCtTFrQPo3YPllHNeaFHH0';
 
 export function getApiKey(): string {
   const savedKey = localStorage.getItem('yt_music_api_key');
-  return savedKey || DEFAULT_API_KEY;
+  if (savedKey && savedKey.trim().startsWith('AIzaSy')) {
+    return savedKey.trim();
+  }
+  return DEFAULT_API_KEY;
 }
 
 export function saveApiKey(key: string) {

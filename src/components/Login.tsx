@@ -5,6 +5,7 @@ import type { UserAccount } from '../types';
 declare global {
   interface Window {
     google: any;
+    __google_auth_initialized?: boolean;
   }
 }
 
@@ -43,6 +44,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const activeClientId = localStorage.getItem('masti_music_google_client_id') || DEFAULT_CLIENT_ID;
 
+  // Use a ref for the latest onLogin to prevent dependency-based effect re-runs
+  const onLoginRef = React.useRef(onLogin);
+  useEffect(() => {
+    onLoginRef.current = onLogin;
+  }, [onLogin]);
+
   useEffect(() => {
     let checkInterval: number;
     let timeout: number;
@@ -55,30 +62,36 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           const btnContainer = document.getElementById('google-signin-btn');
           if (btnContainer) btnContainer.innerHTML = '';
 
-          window.google.accounts.id.initialize({
-            client_id: activeClientId,
-            callback: (response: any) => {
-              const decoded = parseJwt(response.credential);
-              if (decoded) {
-                onLogin({
-                  name: decoded.name || 'Google User',
-                  email: decoded.email || '',
-                  picture: decoded.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'
-                });
+          // Only initialize once to avoid gsi_logger warnings
+          if (!window.__google_auth_initialized) {
+            window.google.accounts.id.initialize({
+              client_id: activeClientId,
+              callback: (response: any) => {
+                const decoded = parseJwt(response.credential);
+                if (decoded) {
+                  onLoginRef.current({
+                    name: decoded.name || 'Google User',
+                    email: decoded.email || '',
+                    picture: decoded.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'
+                  });
+                }
               }
-            }
-          });
+            });
+            window.__google_auth_initialized = true;
+          }
 
-          window.google.accounts.id.renderButton(
-            document.getElementById('google-signin-btn'),
-            { 
-              theme: 'filled_black', 
-              size: 'large', 
-              text: 'signin_with',
-              shape: 'pill',
-              width: '280'
-            }
-          );
+          if (btnContainer) {
+            window.google.accounts.id.renderButton(
+              btnContainer,
+              { 
+                theme: 'filled_black', 
+                size: 'large', 
+                text: 'signin_with',
+                shape: 'pill',
+                width: '280'
+              }
+            );
+          }
         } catch (err) {
           console.error('Google accounts ID init failed', err);
           setSdkError(true);
@@ -109,7 +122,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       clearInterval(checkInterval);
       clearTimeout(timeout);
     };
-  }, [onLogin, activeClientId]);
+  }, [activeClientId]);
 
   // Fallback sign in for local testing or blocked SDKs
   const handleMockSignIn = () => {
@@ -152,34 +165,32 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         <div className="login-actions">
-          {sdkLoading ? (
-            <div className="sdk-loader-wrapper">
+          {sdkLoading && (
+            <div className="sdk-loader-wrapper animate-fade-in">
               <div className="spinner"></div>
               <p>Contacting Google Sign-In...</p>
             </div>
-          ) : (
-            <>
-              {/* Google OAuth Button Container */}
-              <div className="google-btn-wrapper">
-                <div id="google-signin-btn"></div>
-              </div>
-
-              {activeClientId === DEFAULT_CLIENT_ID && (
-                <div className="google-401-warning" style={{ fontSize: '0.7rem', color: '#fb7185', background: 'rgba(251, 113, 133, 0.05)', border: '1px solid rgba(251, 113, 133, 0.2)', borderRadius: 8, padding: 8, maxWidth: 280, display: 'flex', gap: 6, alignItems: 'flex-start', textAlign: 'left' }}>
-                  <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                  <span>The standard Google button uses a dummy Client ID. Clicking it will show an "Authorization Error". Use <strong>Demo Login</strong> below to bypass!</span>
-                </div>
-              )}
-
-              <div className="divider-row">
-                <span>or</span>
-              </div>
-
-              <button className="sandbox-login-btn glow-btn" onClick={handleMockSignIn} style={{ background: 'var(--theme-color)', color: '#000', fontWeight: 700, border: 'none' }}>
-                <LogIn size={18} /> Demo Developer Login
-              </button>
-            </>
           )}
+
+          {/* Always mount this to prevent parent rendering element missing error, but toggle visibility */}
+          <div className="google-btn-wrapper" style={{ display: sdkLoading ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div id="google-signin-btn"></div>
+
+            {activeClientId === DEFAULT_CLIENT_ID && (
+              <div className="google-401-warning" style={{ fontSize: '0.7rem', color: '#fb7185', background: 'rgba(251, 113, 133, 0.05)', border: '1px solid rgba(251, 113, 133, 0.2)', borderRadius: 8, padding: 8, maxWidth: 280, display: 'flex', gap: 6, alignItems: 'flex-start', textAlign: 'left' }}>
+                <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>The standard Google button uses a dummy Client ID. Clicking it will show an "Authorization Error". Use <strong>Demo Login</strong> below to bypass!</span>
+              </div>
+            )}
+
+            <div className="divider-row" style={{ width: '100%' }}>
+              <span>or</span>
+            </div>
+
+            <button className="sandbox-login-btn glow-btn" onClick={handleMockSignIn} style={{ background: 'var(--theme-color)', color: '#000', fontWeight: 700, border: 'none', width: '100%', maxWidth: 280 }}>
+              <LogIn size={18} /> Demo Developer Login
+            </button>
+          </div>
         </div>
 
         {/* Dynamic OAuth Settings Drawer */}
